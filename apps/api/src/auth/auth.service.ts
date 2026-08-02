@@ -1,9 +1,10 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
+import type { JwtSignOptions } from "@nestjs/jwt";
 import bcrypt from "bcryptjs";
 import type { Login } from "@app-platform/contracts";
-import { UsersService } from "../users/users.service.js";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class AuthService {
@@ -38,11 +39,17 @@ export class AuthService {
     const payload = { sub: userId, email };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
-      expiresIn: this.configService.get<string>("JWT_ACCESS_EXPIRES_IN", "15m"),
+      expiresIn: this.configService.get<string>(
+        "JWT_ACCESS_EXPIRES_IN",
+        "15m",
+      ) as JwtSignOptions["expiresIn"],
     });
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
-      expiresIn: this.configService.get<string>("JWT_REFRESH_EXPIRES_IN", "7d"),
+      expiresIn: this.configService.get<string>(
+        "JWT_REFRESH_EXPIRES_IN",
+        "7d",
+      ) as JwtSignOptions["expiresIn"],
     });
     return { accessToken, refreshToken };
   }

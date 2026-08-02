@@ -6,6 +6,6 @@ import { ApiExcludeController } from "@nestjs/swagger";
 export class HealthController {
   @Get()
   check() {
-    return { status: "ok" };
+    return { status: "ok", checkedAt: new Date().toISOString() };
   }
 }

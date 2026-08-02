@@ -1,7 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateUser } from "@app-platform/contracts";
 import bcrypt from "bcryptjs";
-import { PrismaService } from "../prisma/prisma.service.js";
+import { PrismaService } from "../prisma/prisma.service";
+
+function toPublicUser<T extends { passwordHash: string }>(user: T) {
+  const { passwordHash: _passwordHash, ...publicUser } = user;
+  return publicUser;
+}
 
 @Injectable()
 export class UsersService {
@@ -14,7 +19,7 @@ export class UsersService {
   async findByIdOrThrow(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException("User not found");
-    return user;
+    return toPublicUser(user);
   }
 
   async create(input: CreateUser) {
@@ -22,12 +27,13 @@ export class UsersService {
     if (existing) throw new ConflictException("Email already registered");
 
     const passwordHash = await bcrypt.hash(input.password, 10);
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email: input.email,
         displayName: input.displayName,
         passwordHash,
       },
     });
+    return toPublicUser(user);
   }
 }

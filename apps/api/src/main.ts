@@ -1,11 +1,10 @@
+import "dotenv/config";
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
-import { patchNestJsSwagger, ZodValidationPipe } from "nestjs-zod";
-import { AppModule } from "./app.module.js";
-
-patchNestJsSwagger();
+import { cleanupOpenApiDoc, ZodValidationPipe } from "nestjs-zod";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -19,7 +18,7 @@ async function bootstrap() {
     .setVersion("0.1.0")
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
   SwaggerModule.setup("docs", app, document);
 
   const port = process.env.API_PORT ?? 4000;
