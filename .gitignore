@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# build outputs
+dist/
+.next/
+.turbo/
+.vitepress/dist
+.vitepress/cache
+*.tsbuildinfo
+
+# prisma
+apps/api/generated/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# docker
+docker-compose.override.yml

@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.git
+.next
+**/.next
+dist
+**/dist
+.turbo
+**/.turbo
+.vitepress/cache
+**/.vitepress/cache
+**/.vitepress/dist
+apps/api/src/generated
+*.log
+.env
+.env.*
+!.env.example

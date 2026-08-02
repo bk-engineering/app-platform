@@ -1,0 +1,6 @@
+{
+  "HomePage": {
+    "title": "app-platform",
+    "subtitle": "Next.js + NestJS + zod contracts ที่แชร์กัน รันบน Docker พร้อม hot reload"
+  }
+}

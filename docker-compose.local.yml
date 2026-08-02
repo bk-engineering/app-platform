@@ -1,0 +1,57 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web/Dockerfile.dev
+    volumes:
+      - .:/app
+      - web_node_modules:/app/node_modules
+      - web_app_node_modules:/app/apps/web/node_modules
+      - contracts_node_modules_web:/app/packages/contracts/node_modules
+      - config_node_modules_web:/app/packages/config/node_modules
+      - /app/apps/web/.next
+    environment:
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile.dev
+    volumes:
+      - .:/app
+      - api_node_modules:/app/node_modules
+      - api_app_node_modules:/app/apps/api/node_modules
+      - contracts_node_modules_api:/app/packages/contracts/node_modules
+      - config_node_modules_api:/app/packages/config/node_modules
+      - api_generated:/app/apps/api/src/generated
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${API_PORT:-4000}:4000"
+
+  docs:
+    build:
+      context: .
+      dockerfile: infra/docker/docs/Dockerfile.dev
+    volumes:
+      - .:/app
+      - docs_node_modules:/app/node_modules
+      - docs_app_node_modules:/app/apps/docs/node_modules
+      - /app/apps/docs/.vitepress/cache
+    ports:
+      - "${DOCS_PORT:-5173}:5173"
+
+volumes:
+  web_node_modules:
+  web_app_node_modules:
+  api_node_modules:
+  api_app_node_modules:
+  docs_node_modules:
+  docs_app_node_modules:
+  contracts_node_modules_web:
+  contracts_node_modules_api:
+  config_node_modules_web:
+  config_node_modules_api:
+  api_generated:
