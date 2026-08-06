@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Providers } from "../providers";
@@ -17,7 +17,7 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  if (!hasLocale(routing.locales, locale)) notFound();
+  if (!(routing.locales as readonly string[]).includes(locale)) notFound();
 
   return (
     <html lang={locale}>
