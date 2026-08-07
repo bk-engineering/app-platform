@@ -1,17 +1,28 @@
-# 0001 - Record architecture decisions
+---
+title: 0001 · บันทึกการตัดสินใจด้วย ADR
+status: implemented
+---
 
-- Status: accepted
-- Date: 2026-08-02
+# 0001 · บันทึกการตัดสินใจด้วย ADR
 
-## Context
+<Status value="implemented" />
 
-We need to record architectural decisions made in this project so future contributors understand the "why," not just the "what."
+- **สถานะ:** accepted
+- **วันที่:** 2026-08-02
+- **หมวด:** process
 
-## Decision
+## บริบท
 
-We use Architecture Decision Records (ADRs), stored as markdown files in `apps/docs/adr/`, numbered sequentially.
+โปรเจกต์นี้ต้องบันทึกการตัดสินใจเชิงสถาปัตยกรรมไว้ เพื่อให้คนที่มาทีหลังเข้าใจ "ทำไม" ไม่ใช่แค่ "อะไร"
 
-## Consequences
+## การตัดสินใจ
 
-- Every significant architectural decision (framework choice, infra topology, cross-cutting pattern) gets its own ADR.
-- ADRs are immutable once accepted; superseding decisions get a new ADR that references the old one.
+เราจะใช้ Architecture Decision Record เก็บเป็นไฟล์ markdown ใน `apps/docs/adr/` เรียงเลขต่อกัน
+
+## ผลที่ตามมา
+
+- ทุกการตัดสินใจสำคัญ (การเลือก framework, โครงสร้าง infra, รูปแบบที่ใช้ข้ามระบบ) ได้ ADR ของตัวเอง
+- ADR ที่ accepted แล้วห้ามแก้ ต้องการเปลี่ยนใจให้เขียนอันใหม่ที่อ้างถึงอันเก่า
+- ADR ต้องมีทั้งภาษาไทยและอังกฤษเหมือนหน้าอื่น ๆ ตาม [ADR-0015](/adr/0015-docs-as-bilingual-ssot)
+
+ดูรูปแบบและกฎการเขียนที่ [สารบัญ ADR](/adr/overview)
