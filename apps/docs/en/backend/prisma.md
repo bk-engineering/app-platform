@@ -70,21 +70,14 @@ flowchart TD
 **Every query lives in a service, never a controller** — a controller's only job is turning HTTP into plain arguments and passing them along.
 
 ```ts
-// apps/api/src/users/users.service.ts
+// a module that hasn't hit a condition for a repository yet (see "Repository pattern?" below)
 @Injectable()
-export class UsersService {
+export class ExampleService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string) {
-    return this.prisma.user.findFirst({
+    return this.prisma.example.findFirst({
       where: { id, deletedAt: null },
-    });
-  }
-
-  async create(dto: CreateUser) {
-    const passwordHash = await hash(dto.password);
-    return this.prisma.user.create({
-      data: { email: dto.email, displayName: dto.displayName, passwordHash },
     });
   }
 }
@@ -149,14 +142,54 @@ async function main() {
 
 ## Repository pattern?
 
-`apps/api` does **not** add a repository layer between services and `PrismaService` — `PrismaService` is already type-safe and mockable through Nest's dependency injection. Adding a repository layer would be an abstraction over an abstraction, with no plan to ever swap ORMs.
+The default is **services call `PrismaService` directly** — no repository layer from the first module you create. `PrismaService` is already type-safe and mockable through Nest's dependency injection, so adding a repository to every module up front is abstraction with nothing yet to justify it.
+
+Add an `XxxRepository` to a module once it hits one of these conditions:
+
+| Condition | Why |
+| --- | --- |
+| The same non-trivial Prisma query (where/include/select beyond a single field) is repeated across more than one spot in a service, or across services | Keeps the query in one place so its filtering logic can't drift between call sites |
+| The query starts depending on `accessibleBy(ability)` from CASL ([CASL authorization](/en/auth/casl)) | Separates "which rows the caller is allowed to see" from the service's business logic so each can be tested on its own |
+| You need to unit-test a service's business logic without touching Prisma at all (mocking one interface you own, not each `PrismaClient` method) | Mocking `PrismaService` directly means matching Prisma Client's shape, which is more brittle than mocking a repository interface you control |
+
+If none of these apply, let the service call `PrismaService` directly — a repository can always be added later once a condition actually shows up; there's no need to build it in advance.
 
 ```ts
-// test a service by mocking PrismaService directly, no repository in between
+// apps/api/src/users/users.repository.ts
+@Injectable()
+export class UsersRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  create(data: CreateUserRow) {
+    return this.prisma.user.create({ data });
+  }
+}
+```
+
+```ts
+// apps/api/src/users/users.service.ts — the service knows nothing about PrismaService, only the repository
+@Injectable()
+export class UsersService {
+  constructor(private readonly usersRepository: UsersRepository) {}
+
+  findByEmail(email: string) {
+    return this.usersRepository.findByEmail(email);
+  }
+}
+```
+
+```ts
+// test the service by mocking the repository instead of PrismaService
 const module = await Test.createTestingModule({
-  providers: [UsersService, { provide: PrismaService, useValue: mockPrisma }],
+  providers: [UsersService, { provide: UsersRepository, useValue: mockUsersRepository }],
 }).compile();
 ```
+
+`UsersModule` is the worked example — it meets the first condition (user queries are called from both `create()` and `findByEmail()`, and will gain another caller once RBAC has `AuthModule` reach through `UsersService`).
 
 ## Tying in with CASL
 

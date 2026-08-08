@@ -14,7 +14,7 @@ export class UsersController {
     return this.usersService.create(body);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth("access-token")
   @UseGuards(JwtAuthGuard)
   @Get(":id")
   findOne(@Param("id") id: string) {

@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateUser } from "@app-platform/contracts";
 import bcrypt from "bcryptjs";
-import { PrismaService } from "../prisma/prisma.service";
+import { UsersRepository } from "./users.repository";
 
 function toPublicUser<T extends { passwordHash: string }>(user: T) {
   const { passwordHash: _passwordHash, ...publicUser } = user;
@@ -10,14 +10,14 @@ function toPublicUser<T extends { passwordHash: string }>(user: T) {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly usersRepository: UsersRepository) {}
 
   findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.usersRepository.findByEmail(email);
   }
 
   async findByIdOrThrow(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.usersRepository.findById(id);
     if (!user) throw new NotFoundException("User not found");
     return toPublicUser(user);
   }
@@ -27,12 +27,10 @@ export class UsersService {
     if (existing) throw new ConflictException("Email already registered");
 
     const passwordHash = await bcrypt.hash(input.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email: input.email,
-        displayName: input.displayName,
-        passwordHash,
-      },
+    const user = await this.usersRepository.create({
+      email: input.email,
+      displayName: input.displayName,
+      passwordHash,
     });
     return toPublicUser(user);
   }

@@ -70,21 +70,14 @@ flowchart TD
 **ทุก query ต้องอยู่ใน service ไม่ใช่ controller** — controller มีหน้าที่แค่แปลง HTTP เป็น argument แล้วส่งต่อ
 
 ```ts
-// apps/api/src/users/users.service.ts
+// ตัวอย่าง module ที่ยังไม่เข้าเงื่อนไขต้องมี repository (ดูหัวข้อ "Repository pattern ไหม" ด้านล่าง)
 @Injectable()
-export class UsersService {
+export class ExampleService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string) {
-    return this.prisma.user.findFirst({
+    return this.prisma.example.findFirst({
       where: { id, deletedAt: null },
-    });
-  }
-
-  async create(dto: CreateUser) {
-    const passwordHash = await hash(dto.password);
-    return this.prisma.user.create({
-      data: { email: dto.email, displayName: dto.displayName, passwordHash },
     });
   }
 }
@@ -149,14 +142,54 @@ async function main() {
 
 ## Repository pattern ไหม
 
-`apps/api` **ไม่** แยกชั้น repository ระหว่าง service กับ `PrismaService` — `PrismaService` เองก็ type-safe และ mock ได้อยู่แล้วผ่าน dependency injection ของ Nest การเพิ่มชั้น repository จะเป็นการเขียน abstraction ซ้อน abstraction โดยไม่มีเหตุผลที่จะเปลี่ยน ORM ในอนาคต
+ค่าเริ่มต้นคือ **service เรียก `PrismaService` ตรง ๆ ได้** — ไม่ต้องมี repository คั่นกลางตั้งแต่ module แรกที่สร้าง `PrismaService` เองก็ type-safe และ mock ได้อยู่แล้วผ่าน dependency injection ของ Nest การเพิ่มชั้น repository ทุก module ตั้งแต่ต้นคือ abstraction ที่ยังไม่มีอะไรมาพิสูจน์ว่าจำเป็น
+
+เพิ่มชั้น `XxxRepository` ให้ module นั้นเมื่อเข้าเงื่อนไขข้อใดข้อหนึ่ง:
+
+| เงื่อนไข | เหตุผล |
+| --- | --- |
+| query Prisma เดิม (where/include/select ซับซ้อนกว่า field เดียว) ถูกเรียกซ้ำในมากกว่า 1 จุดของ service เดิม หรือข้าม service | รวม query ไว้ที่เดียว กัน logic การกรองข้อมูล drift กันระหว่างจุดเรียก |
+| query เริ่มผูกกับ `accessibleBy(ability)` จาก CASL ([CASL authorization](/auth/casl)) | แยก "กติกาสิทธิ์กรองแถวไหนได้บ้าง" ออกจาก business logic ของ service ให้ทดสอบแยกกันได้ |
+| ต้องการเทส business logic ของ service โดยไม่แตะ Prisma เลย (mock ทั้งชั้น ไม่ใช่ mock ทีละ method ของ `PrismaClient`) | mock `PrismaService` ตรง ๆ ต้อง mock ให้ตรง shape ของ Prisma Client ซึ่งเปราะกว่า mock interface ของ repository ที่เราคุมเอง |
+
+ถ้าไม่เข้าเงื่อนไขไหนเลย ให้ service เรียก `PrismaService` ตรงไปก่อน — เพิ่ม repository ทีหลังได้เสมอเมื่อเงื่อนไขเกิดขึ้นจริง ไม่ต้องเผื่อล่วงหน้า
 
 ```ts
-// เทส service โดย mock PrismaService ตรง ๆ ไม่ต้องมี repository คั่นกลาง
+// apps/api/src/users/users.repository.ts
+@Injectable()
+export class UsersRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  create(data: CreateUserRow) {
+    return this.prisma.user.create({ data });
+  }
+}
+```
+
+```ts
+// apps/api/src/users/users.service.ts — service ไม่รู้จัก PrismaService เลย รู้จักแค่ repository
+@Injectable()
+export class UsersService {
+  constructor(private readonly usersRepository: UsersRepository) {}
+
+  findByEmail(email: string) {
+    return this.usersRepository.findByEmail(email);
+  }
+}
+```
+
+```ts
+// เทส service โดย mock repository แทน PrismaService
 const module = await Test.createTestingModule({
-  providers: [UsersService, { provide: PrismaService, useValue: mockPrisma }],
+  providers: [UsersService, { provide: UsersRepository, useValue: mockUsersRepository }],
 }).compile();
 ```
+
+`UsersModule` เป็นตัวอย่างที่ทำแล้ว — เข้าเงื่อนไขข้อแรก (query ผู้ใช้ถูกเรียกทั้งจาก `create()` และ `findByEmail()` และจะถูก `AuthModule` เรียกผ่าน `UsersService` เพิ่มอีกทางเมื่อ RBAC เข้ามา)
 
 ## เชื่อมกับ CASL
 

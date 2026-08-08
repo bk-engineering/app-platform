@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/web/Dockerfile.dev
+    env_file:
+      - .env
     volumes:
       - .:/app
       - web_node_modules:/app/node_modules
@@ -22,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/api/Dockerfile.dev
+    env_file:
+      - .env
     volumes:
       - .:/app
       - api_node_modules:/app/node_modules
@@ -39,6 +43,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/docs/Dockerfile.dev
+    env_file:
+      - .env
     volumes:
       - .:/app
       - docs_node_modules:/app/node_modules

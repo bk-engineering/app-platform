@@ -16,10 +16,15 @@ async function bootstrap() {
     .setTitle("app-platform API")
     .setDescription("API for the app-platform monorepo")
     .setVersion("0.1.0")
-    .addBearerAuth()
+    .addBearerAuth(
+      { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      "access-token",
+    )
     .build();
   const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
-  SwaggerModule.setup("docs", app, document);
+  SwaggerModule.setup("docs", app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   const port = process.env.API_PORT ?? 4000;
   await app.listen(port, "0.0.0.0");
