@@ -66,6 +66,57 @@ me(@CurrentUser() user: User) { ... }
 
 `.addBearerAuth()` on `DocumentBuilder` adds an "Authorize" button to Swagger UI — paste a JWT once, and every endpoint marked `@ApiBearerAuth()` attaches the header automatically when you hit "Try it out".
 
+## OAuth2 password flow — login + auto-attach the token to everything else
+
+`.addBearerAuth()` requires copy/pasting the access token after login every time — `.addOAuth2()` with a `password` flow lets Swagger UI call `POST /auth/token` for you right from the Authorize dialog, then keeps the token attached to every request that follows without any copying.
+
+```ts
+// apps/api/src/main.ts
+const config = new DocumentBuilder()
+  .addBearerAuth(
+    { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+    "access-token", // for pasting a token you already have (e.g. from curl)
+  )
+  .addOAuth2(
+    {
+      type: "oauth2",
+      flows: {
+        password: {
+          tokenUrl: "/auth/token",
+          refreshUrl: "/auth/token",
+          scopes: {},
+        },
+      },
+    },
+    "oauth2", // for typing username/password into the Authorize dialog and letting Swagger fetch the token itself
+  )
+  .build();
+```
+
+For an endpoint that should accept either path (an either/or), attach both decorators — `@nestjs/swagger` combines multiple security decorators as OR entries in that operation's `security` array, not AND:
+
+```ts
+@ApiBearerAuth("access-token")
+@ApiSecurity("oauth2")
+@UseGuards(JwtAuthGuard)
+@Get(":id")
+findOne(@Param("id") id: string) { ... }
+```
+
+`POST /auth/token` itself must consume `application/x-www-form-urlencoded`, not JSON, because the OAuth2 grant flow (RFC 6749) specifies that body shape. Without `@ApiConsumes("application/x-www-form-urlencoded")`, Swagger UI sends JSON and the endpoint rejects it:
+
+```ts
+@ApiConsumes("application/x-www-form-urlencoded")
+@Post("token")
+token(@Body() body: TokenRequestDto) { ... }
+```
+
+Request/response schema details live on [Contract schema catalog § auth.schema.ts](/en/reference/contracts), and the real endpoint on [API endpoint catalog](/en/reference/api-endpoints).
+
+::: tip Swagger UI doesn't auto-refresh in every case
+`refreshUrl` tells Swagger UI where to fetch a new token from, but it doesn't guarantee the UI refreshes automatically the instant an access token expires mid-session. What it does guarantee is that after the first successful Authorize, every remaining request in that session attaches the header for you without copy/pasting again.
+:::
+
 ## Endpoints that shouldn't show up in Swagger
 
 ```ts
@@ -115,6 +166,7 @@ A Swagger UI generated from real DTOs **cannot** drift from real validation, bec
 | --- | --- |
 | Swagger UI at `/docs` | Live at `api.localhost/docs` |
 | Bearer auth scheme | Configured via `.addBearerAuth()` |
+| OAuth2 password flow (token auto-attach) | Configured via `.addOAuth2()` — `POST /auth/token` supports both `grant_type=password` and `grant_type=refresh_token` |
 | `patchNestJsSwagger()` + `cleanupOpenApiDoc()` | Called in `main.ts`, matching the spec |
 | `@ApiExcludeController()` on health | Present |
 | Exporting the spec as `openapi.json` in CI | Doesn't exist — there's no CI at all ([Roadmap](/en/start/roadmap) debt #9) |

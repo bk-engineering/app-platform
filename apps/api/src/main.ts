@@ -20,6 +20,19 @@ async function bootstrap() {
       { type: "http", scheme: "bearer", bearerFormat: "JWT" },
       "access-token",
     )
+    .addOAuth2(
+      {
+        type: "oauth2",
+        flows: {
+          password: {
+            tokenUrl: "/auth/token",
+            refreshUrl: "/auth/token",
+            scopes: {},
+          },
+        },
+      },
+      "oauth2",
+    )
     .build();
   const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
   SwaggerModule.setup("docs", app, document, {

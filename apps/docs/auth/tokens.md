@@ -308,5 +308,6 @@ WHERE expires_at < now() - interval '30 days';
 | ตรวจ `issuer` / `audience` | ไม่ได้ตั้งทั้งตอนเซ็นและตอน verify |
 | แยก expired ออกจาก invalid | `JwtAuthGuard` เป็น `AuthGuard("jwt")` เปล่า ๆ ได้ 401 เหมือนกันหมด |
 | guard เป็น global + `@Public()` | opt-in ต่อ route — `POST /users` เปิด public |
+| route แยก `/auth/login` + `/auth/refresh` | รวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant (`grant_type=password` \| `refresh_token`) เพื่อให้ Swagger UI ใช้ oauth2 password flow auto-attach token ได้ — ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
 | access token มี `roles` | payload มีแค่ `sub` กับ `email` |
 :::

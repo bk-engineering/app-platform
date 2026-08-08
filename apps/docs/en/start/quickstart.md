@@ -112,7 +112,7 @@ From `apps/api/prisma/seed.ts`:
 | --- | --- |
 | `demo@example.com` | `password123` |
 
-Right now you can only exercise this through Swagger (`POST /auth/login`) because the web login page isn't implemented yet — see the [login spec](/en/auth/login).
+Right now you can only exercise this through Swagger (`POST /auth/token` with `grant_type=password`) because the web login page isn't implemented yet — click **Authorize → oauth2 (password)** in Swagger UI and enter the email/password above; no need to copy a token yourself. See [OpenAPI / Swagger § OAuth2 password flow](/en/backend/openapi) and the [login spec](/en/auth/login).
 
 ## Common problems
 

@@ -262,7 +262,7 @@ The server stores `(key, body hash) -> response` for 24 hours. Same key and body
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| Every route under `/v1` | No `setGlobalPrefix` — routes are `/auth/login`, `/users` |
+| Every route under `/v1` | No `setGlobalPrefix` — routes are `/auth/token`, `/users` |
 | List endpoints paginate | There are no list endpoints; `paginatedSchema` is unused |
 | Sort/filter grammar | Doesn't exist |
 | `POST /users` is guarded | **It is public** |

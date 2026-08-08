@@ -66,6 +66,57 @@ me(@CurrentUser() user: User) { ... }
 
 `.addBearerAuth()` ใน `DocumentBuilder` เปิดปุ่ม "Authorize" บน Swagger UI — ใส่ JWT ครั้งเดียวแล้ว endpoint ที่มี `@ApiBearerAuth()` จะแนบ header ให้อัตโนมัติเวลากด "Try it out"
 
+## OAuth2 password flow — login + auto-attach token ให้ทุก request ที่เหลือ
+
+`.addBearerAuth()` ต้อง copy/paste access token เข้าไปเองหลัง login — `.addOAuth2()` แบบ `password` flow ให้ Swagger UI ยิง `POST /auth/token` ให้เองจากในหน้า Authorize แล้วเก็บ token ไว้ใช้กับทุก request ถัดไปโดยไม่ต้อง copy
+
+```ts
+// apps/api/src/main.ts
+const config = new DocumentBuilder()
+  .addBearerAuth(
+    { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+    "access-token", // สำหรับ paste token ที่มีอยู่แล้วตรง ๆ (เช่นจาก curl)
+  )
+  .addOAuth2(
+    {
+      type: "oauth2",
+      flows: {
+        password: {
+          tokenUrl: "/auth/token",
+          refreshUrl: "/auth/token",
+          scopes: {},
+        },
+      },
+    },
+    "oauth2", // สำหรับกรอก username/password ใน Authorize dialog แล้วให้ Swagger ขอ token เอง
+  )
+  .build();
+```
+
+endpoint ที่ต้องการให้ทั้งสองทางใช้ได้ (either/or) ใส่ decorator ทั้งคู่ — nestjs-swagger รวม decorator หลายตัวแบบ OR ใน `security` array ของ operation นั้น ไม่ใช่ AND:
+
+```ts
+@ApiBearerAuth("access-token")
+@ApiSecurity("oauth2")
+@UseGuards(JwtAuthGuard)
+@Get(":id")
+findOne(@Param("id") id: string) { ... }
+```
+
+`POST /auth/token` เองต้องรับ `application/x-www-form-urlencoded` ไม่ใช่ JSON เพราะ OAuth2 grant flow (RFC 6749) กำหนด body shape ไว้แบบนั้น — ต้องใส่ `@ApiConsumes("application/x-www-form-urlencoded")` ไม่งั้น Swagger UI จะส่งเป็น JSON แล้ว mismatch กับที่ endpoint คาดหวัง:
+
+```ts
+@ApiConsumes("application/x-www-form-urlencoded")
+@Post("token")
+token(@Body() body: TokenRequestDto) { ... }
+```
+
+รายละเอียด schema ของ request/response อยู่ที่ [Contract schema catalog § auth.schema.ts](/reference/contracts) และ endpoint จริงอยู่ที่ [API endpoint catalog](/reference/api-endpoints)
+
+::: tip Swagger UI ไม่ได้ auto-refresh ทุกกรณี
+`refreshUrl` บอก Swagger UI ว่าจะขอ token ใหม่จากไหน แต่ไม่ได้แปลว่ามันจะ refresh ให้อัตโนมัติทุกเวอร์ชัน/ทุกครั้งที่ access token หมดอายุกลางอากาศ — สิ่งที่การันตีแน่ ๆ คือหลัง Authorize ครั้งแรกสำเร็จ ทุก request ที่เหลือใน session นั้นจะแนบ header ให้เองโดยไม่ต้อง copy/paste ซ้ำ
+:::
+
 ## Endpoint ที่ไม่อยากให้ขึ้นใน Swagger
 
 ```ts
@@ -115,6 +166,7 @@ Swagger UI ที่ generate จาก DTO จริง **ไม่มีทา
 | --- | --- |
 | Swagger UI ที่ `/docs` | ใช้งานได้จริงที่ `api.localhost/docs` |
 | Bearer auth scheme | ตั้งค่าไว้แล้วผ่าน `.addBearerAuth()` |
+| OAuth2 password flow (auto-attach token) | ตั้งค่าไว้แล้วผ่าน `.addOAuth2()` — `POST /auth/token` รองรับทั้ง `grant_type=password` และ `grant_type=refresh_token` |
 | `patchNestJsSwagger()` + `cleanupOpenApiDoc()` | เรียกอยู่ใน `main.ts` ตามสเปก |
 | `@ApiExcludeController()` บน health | มีอยู่จริง |
 | export spec เป็น `openapi.json` ใน CI | ยังไม่มี — ไม่มี CI เลย ([Roadmap](/start/roadmap) หนี้ #9) |

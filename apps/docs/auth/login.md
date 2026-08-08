@@ -286,5 +286,5 @@ const next = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashb
 | throttle | ไม่มี `@nestjs/throttler` |
 | access token มี `roles` | payload มีแค่ `sub` กับ `email` |
 | `AuditLog` | ไม่มีตาราง |
-| route อยู่ใต้ `/v1` | เป็น `POST /auth/login` |
+| route อยู่ใต้ `/v1` | เป็น `POST /auth/token` (grant_type=password) — รวม login กับ refresh เป็น endpoint เดียวตาม OAuth2 เพื่อให้ Swagger UI auto-attach token ได้ ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
 :::

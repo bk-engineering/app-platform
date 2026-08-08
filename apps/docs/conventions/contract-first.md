@@ -22,9 +22,9 @@ statusNote: apps/api ใช้ contracts แล้ว แต่ apps/web ยั�
 
 ```mermaid
 flowchart LR
-  S["LoginSchema<br/>(zod)"]
-  S --> A["type Login<br/>z.infer"]
-  S --> B["LoginDto<br/>createZodDto → Nest + Swagger"]
+  S["CreateUserSchema<br/>(zod)"]
+  S --> A["type CreateUser<br/>z.infer"]
+  S --> B["CreateUserDto<br/>createZodDto → Nest + Swagger"]
   S --> C["zodResolver<br/>→ react-hook-form"]
   S --> D["response.parse()<br/>ตรวจของที่ API ส่งกลับจริง"]
 
@@ -36,22 +36,17 @@ flowchart LR
 
 ## กายวิภาคของ schema
 
-`packages/contracts/src/auth.schema.ts` ตามจริง
+`packages/contracts/src/user.schema.ts` ตามจริง
 
 ```ts
 import { z } from "zod";
 
-export const LoginSchema = z.object({
+export const CreateUserSchema = z.object({
   email: z.email(),
+  displayName: z.string().min(1).max(120),
   password: z.string().min(8).max(72),
 });
-export type Login = z.infer<typeof LoginSchema>;
-
-export const AuthTokensSchema = z.object({
-  accessToken: z.string(),
-  refreshToken: z.string(),
-});
-export type AuthTokens = z.infer<typeof AuthTokensSchema>;
+export type CreateUser = z.infer<typeof CreateUserSchema>;
 ```
 
 กฎการตั้งชื่อ
@@ -89,24 +84,27 @@ export function paginatedSchema<T extends z.ZodTypeAny>(itemSchema: T) {
 
 ## ฝั่ง API ใช้ยังไง
 
-`nestjs-zod` แปลง schema เป็น DTO ที่ทั้ง Nest validate ได้และ Swagger อ่าน type ได้ — `apps/api/src/auth/dto/login.dto.ts`
+`nestjs-zod` แปลง schema เป็น DTO ที่ทั้ง Nest validate ได้และ Swagger อ่าน type ได้ — `apps/api/src/users/dto/create-user.dto.ts`
 
 ```ts
 import { createZodDto } from "nestjs-zod";
-import { LoginSchema, RefreshTokenSchema } from "@app-platform/contracts";
+import { CreateUserSchema } from "@app-platform/contracts";
 
-export class LoginDto extends createZodDto(LoginSchema) {}
-export class RefreshTokenDto extends createZodDto(RefreshTokenSchema) {}
+export class CreateUserDto extends createZodDto(CreateUserSchema) {}
 ```
 
 controller ใช้เป็น DTO ปกติ
 
 ```ts
-@Post("login")
-login(@Body() body: LoginDto) {
-  return this.authService.login(body);
+@Post()
+create(@Body() body: CreateUserDto) {
+  return this.usersService.create(body);
 }
 ```
+
+::: tip schema ที่เป็น union (เช่น `TokenRequestSchema` ของ `/auth/token`) extend เป็น DTO แบบนี้ไม่ได้ตรง ๆ
+`createZodDto` ต้องการ schema ที่ infer ออกมาเป็น object type เดียว ถ้า schema เป็น `z.discriminatedUnion(...)` TypeScript จะ error ตอน `class Xxx extends createZodDto(UnionSchema) {}` เพราะ base class มี instance type เป็น union ไม่ใช่ object เดี่ยว ทางแก้คือเขียนเป็น `z.object()` ตัวเดียวที่ field ที่ไม่ใช้ร่วมกันเป็น `.optional()` แล้วบังคับด้วย `.refine()` แทน — ดูตัวอย่างจริงที่ `packages/contracts/src/auth.schema.ts` (`TokenRequestSchema`) และ [Contract schema catalog](/reference/contracts)
+:::
 
 `ZodValidationPipe` ที่ลงทะเบียนแบบ global ใน `main.ts` เป็นคนตรวจ ไม่ต้องเรียก `.parse()` เองใน controller
 
@@ -126,11 +124,11 @@ app.useGlobalPipes(new ZodValidationPipe());
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginSchema, type Login } from "@app-platform/contracts";
+import { CreateUserSchema, type CreateUser } from "@app-platform/contracts";
 
-const form = useForm<Login>({
-  resolver: zodResolver(LoginSchema),
-  defaultValues: { email: "", password: "" },
+const form = useForm<CreateUser>({
+  resolver: zodResolver(CreateUserSchema),
+  defaultValues: { email: "", displayName: "", password: "" },
 });
 ```
 

@@ -286,5 +286,5 @@ const next = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashb
 | Throttling | No `@nestjs/throttler` |
 | Access tokens carry `roles` | The payload has only `sub` and `email` |
 | `AuditLog` | No such table |
-| Routes under `/v1` | It's `POST /auth/login` |
+| Routes under `/v1` | It's `POST /auth/token` (grant_type=password) — login and refresh are merged into one OAuth2-shaped endpoint so Swagger UI can auto-attach the token. See [OpenAPI § OAuth2 password flow](/en/backend/openapi) |
 :::

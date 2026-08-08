@@ -96,7 +96,7 @@ src/
 
 zod schema ล้วน ไม่มีขั้นตอน build (`main` ชี้ไป `./src/index.ts` ตรง ๆ) — `apps/web` จึงต้องมี `transpilePackages: ["@app-platform/contracts"]` ใน `next.config.ts`
 
-ของที่มีอยู่ตอนนี้: `LoginSchema`, `AuthTokensSchema`, `RefreshTokenSchema`, `UserSchema`, `CreateUserSchema`, `UpdateUserSchema`, `PaginationQuerySchema`, `paginatedSchema()`
+ของที่มีอยู่ตอนนี้: `TokenRequestSchema`, `TokenResponseSchema`, `UserSchema`, `CreateUserSchema`, `UpdateUserSchema`, `PaginationQuerySchema`, `paginatedSchema()`
 
 ### `packages/config`
 

@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { JwtSignOptions } from "@nestjs/jwt";
 import bcrypt from "bcryptjs";
-import type { Login } from "@app-platform/contracts";
+import type { TokenResponse } from "@app-platform/contracts";
 import { UsersService } from "../users/users.service";
 
 @Injectable()
@@ -14,17 +14,17 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async login(input: Login) {
-    const user = await this.usersService.findByEmail(input.email);
+  async login(email: string, password: string): Promise<TokenResponse> {
+    const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException("Invalid credentials");
 
-    const passwordMatches = await bcrypt.compare(input.password, user.passwordHash);
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) throw new UnauthorizedException("Invalid credentials");
 
     return this.issueTokens(user.id, user.email);
   }
 
-  async refresh(refreshToken: string) {
+  async refresh(refreshToken: string): Promise<TokenResponse> {
     try {
       const payload = this.jwtService.verify<{ sub: string; email: string }>(refreshToken, {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
@@ -35,7 +35,7 @@ export class AuthService {
     }
   }
 
-  private issueTokens(userId: string, email: string) {
+  private issueTokens(userId: string, email: string): TokenResponse {
     const payload = { sub: userId, email };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
@@ -51,6 +51,13 @@ export class AuthService {
         "7d",
       ) as JwtSignOptions["expiresIn"],
     });
-    return { accessToken, refreshToken };
+    const { exp, iat } = this.jwtService.decode<{ exp: number; iat: number }>(accessToken);
+
+    return {
+      access_token: accessToken,
+      token_type: "bearer",
+      expires_in: exp - iat,
+      refresh_token: refreshToken,
+    };
   }
 }

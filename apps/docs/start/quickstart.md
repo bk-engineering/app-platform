@@ -112,7 +112,7 @@ pnpm --filter @app-platform/api prisma:seed
 | --- | --- |
 | `demo@example.com` | `password123` |
 
-ตอนนี้ยังทดสอบได้เฉพาะผ่าน Swagger (`POST /auth/login`) เพราะหน้า login บนเว็บยังไม่ถูก implement — ดู[สเปกหน้าเข้าสู่ระบบ](/auth/login)
+ตอนนี้ยังทดสอบได้เฉพาะผ่าน Swagger (`POST /auth/token` ด้วย `grant_type=password`) เพราะหน้า login บนเว็บยังไม่ถูก implement — กด **Authorize → oauth2 (password)** ใน Swagger UI แล้วกรอกอีเมล/รหัสผ่านด้านบนได้เลย ไม่ต้อง copy token เอง ดู [OpenAPI / Swagger § OAuth2 password flow](/backend/openapi) และ[สเปกหน้าเข้าสู่ระบบ](/auth/login)
 
 ## แก้ปัญหาที่เจอบ่อย
 

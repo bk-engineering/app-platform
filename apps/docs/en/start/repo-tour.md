@@ -96,7 +96,7 @@ One folder = one module = one bounded context. Modules talk through exported ser
 
 Pure zod schemas with no build step (`main` points straight at `./src/index.ts`), which is why `apps/web` needs `transpilePackages: ["@app-platform/contracts"]` in `next.config.ts`.
 
-What's there today: `LoginSchema`, `AuthTokensSchema`, `RefreshTokenSchema`, `UserSchema`, `CreateUserSchema`, `UpdateUserSchema`, `PaginationQuerySchema`, `paginatedSchema()`.
+What's there today: `TokenRequestSchema`, `TokenResponseSchema`, `UserSchema`, `CreateUserSchema`, `UpdateUserSchema`, `PaginationQuerySchema`, `paginatedSchema()`.
 
 ### `packages/config`
 

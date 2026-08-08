@@ -20,8 +20,7 @@ statusNote: endpoint จริงมีน้อย ไม่มี /v1 prefix �
 
 | Method | Path | Auth | Request body | Response | หมายเหตุ |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/auth/login` | ไม่ต้อง | `LoginSchema` — `{ email, password }` | `AuthTokensSchema` — `{ accessToken, refreshToken }` | โยน `401` ถ้า email/password ผิด (ไม่บอกว่าผิดตัวไหน) |
-| `POST` | `/auth/refresh` | ไม่ต้อง (ใช้ refresh token แทน) | `RefreshTokenSchema` — `{ refreshToken }` | `AuthTokensSchema` | verify แล้ว re-sign ทันที **ไม่มี rotation** — token เดิมยังใช้ซ้ำได้ ดู [JWT & refresh rotation](/auth/tokens) |
+| `POST` | `/auth/token` | ไม่ต้อง | `application/x-www-form-urlencoded` ตาม `TokenRequestSchema` — `grant_type=password` ต้องมี `username`+`password`, `grant_type=refresh_token` ต้องมี `refresh_token` (validate ด้วย `.refine()`) | `TokenResponseSchema` — `{ access_token, token_type: "bearer", expires_in, refresh_token }` | endpoint เดียวรวม login + refresh ตาม OAuth2 password/refresh_token grant (RFC 6749) เพื่อให้ Swagger UI ใช้ **Authorize → OAuth2 (password)** แล้ว auto-refresh ได้ในตัว โยน `401` ถ้า credentials ผิด, `400` ถ้า field ไม่ครบตาม grant_type — verify แล้ว re-sign ทันที **ไม่มี rotation** — token เดิมยังใช้ซ้ำได้ ดู [JWT & refresh rotation](/auth/tokens) |
 
 ## Users
 
@@ -46,14 +45,14 @@ response ของทั้งสอง endpoint ตัด `passwordHash` ออ
 
 | Guard | ใช้ที่ไหน | ทำอะไร |
 | --- | --- | --- |
-| ไม่มี guard | `POST /auth/login`, `POST /auth/refresh`, `GET /health`, **`POST /users`** | เปิด public ทั้งหมด — สาม endpoint แรกตั้งใจ ตัวสุดท้ายไม่ได้ตั้งใจ |
-| `JwtAuthGuard` | `GET /users/:id` | ต้องมี `Authorization: Bearer <accessToken>` ที่ valid ยังไม่เช็ก [CASL/สิทธิ์](/auth/rbac-model) — เช็กแค่ว่า login อยู่ ไม่เช็กว่าดู user คนอื่นได้ไหม |
+| ไม่มี guard | `POST /auth/token`, `GET /health`, **`POST /users`** | เปิด public ทั้งหมด — สอง endpoint แรกตั้งใจ ตัวสุดท้ายไม่ได้ตั้งใจ |
+| `JwtAuthGuard` | `GET /users/:id` | ต้องมี `Authorization: Bearer <access_token>` ที่ valid — รับได้ทั้ง token ที่ paste ผ่าน Swagger's bearer scheme (`access-token`) หรือ token ที่ Swagger ขอมาให้เองผ่าน oauth2 password flow (`oauth2`) ยังไม่เช็ก [CASL/สิทธิ์](/auth/rbac-model) — เช็กแค่ว่า login อยู่ ไม่เช็กว่าดู user คนอื่นได้ไหม |
 
 ## ที่สเปกต้องการแต่ยังไม่มี endpoint จริง
 
 รายการ endpoint ที่หน้าเอกสารอื่นพูดถึงแต่ controller ยังไม่มี — อย่าเชื่อว่ามีอยู่จนกว่าจะเช็ก controller เอง
 
-- `POST /auth/logout` — เพิกถอน refresh token family เดียว ([JWT & refresh rotation](/auth/tokens))
+- `POST /auth/logout`, `POST /auth/revoke` — เพิกถอน refresh token family เดียว ([JWT & refresh rotation](/auth/tokens)) — OAuth2 มีท่ามาตรฐานสำหรับ revoke คือ `POST /auth/revoke` (RFC 7009) ถ้าจะตาม spec ให้ครบ
 - `POST /auth/google`, `GET /auth/google/callback` — Google OAuth ([สมัครสมาชิก](/auth/signup))
 - `POST /auth/verify-email`, `POST /auth/resend-verification` ([ยืนยันอีเมล](/auth/email-verification))
 - `POST /auth/forgot-password`, `POST /auth/reset-password` ([ลืมรหัสผ่าน](/auth/forgot-password))

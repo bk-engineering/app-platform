@@ -1,20 +1,20 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
-import { LoginDto, RefreshTokenDto } from "./dto/login.dto";
+import { TokenRequestDto } from "./dto/token-request.dto";
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post("login")
-  login(@Body() body: LoginDto) {
-    return this.authService.login(body);
-  }
-
-  @Post("refresh")
-  refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refresh(body.refreshToken);
+  @ApiConsumes("application/x-www-form-urlencoded")
+  @Post("token")
+  token(@Body() body: TokenRequestDto) {
+    // TokenRequestSchema's .refine() already guarantees these fields are present per grant_type
+    if (body.grant_type === "password") {
+      return this.authService.login(body.username!, body.password!);
+    }
+    return this.authService.refresh(body.refresh_token!);
   }
 }

@@ -310,4 +310,5 @@ Keeping expired rows for another 30 days is deliberate — delete them immediate
 | Expired distinguished from invalid | `JwtAuthGuard` is a bare `AuthGuard("jwt")` — everything is one 401 |
 | Global guard + `@Public()` | Opt-in per route; `POST /users` is public |
 | Access tokens carry `roles` | The payload has only `sub` and `email` |
+| Separate `/auth/login` + `/auth/refresh` routes | Merged into one `POST /auth/token` per the OAuth2 grant (`grant_type=password` \| `refresh_token`), so Swagger UI's oauth2 password flow can auto-attach the token — see [OpenAPI § OAuth2 password flow](/en/backend/openapi) |
 :::

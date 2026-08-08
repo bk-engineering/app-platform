@@ -58,12 +58,14 @@ There's no `PATCH /users/:id` in `UsersController` today — the schema exists b
 
 | Name | Kind | Shape |
 | --- | --- | --- |
-| `LoginSchema` | schema | `{ email: email, password: string (8–72) }` |
-| `Login` | type | `z.infer<typeof LoginSchema>` |
-| `AuthTokensSchema` | schema | `{ accessToken: string, refreshToken: string }` |
-| `AuthTokens` | type | `z.infer<typeof AuthTokensSchema>` |
-| `RefreshTokenSchema` | schema | `{ refreshToken: string }` |
-| `RefreshToken` | type | `z.infer<typeof RefreshTokenSchema>` |
+| `TokenRequestSchema` | schema | `{ grant_type: "password" \| "refresh_token", username?: email, password?: string (8–72), refresh_token?: string }` plus a `.refine()` requiring `username`+`password` when `grant_type=password`, and `refresh_token` when `grant_type=refresh_token` — per the OAuth2 password/refresh_token grant (RFC 6749) |
+| `TokenRequest` | type | `z.infer<typeof TokenRequestSchema>` — fields unused by a given grant_type stay optional in the type, since `.refine()` doesn't narrow the union; call sites need a non-null assertion (`!`) after validation has already run |
+| `TokenResponseSchema` | schema | `{ access_token: string, token_type: "bearer", expires_in: number, refresh_token: string }` — shaped per RFC 6749 §5.1, not the old camelCase `accessToken`/`refreshToken` |
+| `TokenResponse` | type | `z.infer<typeof TokenResponseSchema>` |
+
+::: tip Why this replaced `LoginSchema`/`AuthTokensSchema`
+`/auth/login` and `/auth/refresh` used to be two separate endpoints with their own free-form camelCase JSON, matching no particular spec. They're now one `POST /auth/token` following the OAuth2 grant flow, so Swagger UI's **Authorize → oauth2 (password)** button can fetch tokens for you (see [OpenAPI / Swagger](/en/backend/openapi)) — the trade-off is the body must be `application/x-www-form-urlencoded` with RFC-named fields instead of camelCase.
+:::
 
 ## Who actually uses these
 

@@ -22,9 +22,9 @@ With one zod definition you get four things:
 
 ```mermaid
 flowchart LR
-  S["LoginSchema<br/>(zod)"]
-  S --> A["type Login<br/>z.infer"]
-  S --> B["LoginDto<br/>createZodDto → Nest + Swagger"]
+  S["CreateUserSchema<br/>(zod)"]
+  S --> A["type CreateUser<br/>z.infer"]
+  S --> B["CreateUserDto<br/>createZodDto → Nest + Swagger"]
   S --> C["zodResolver<br/>→ react-hook-form"]
   S --> D["response.parse()<br/>verifies what the API actually sent"]
 
@@ -36,22 +36,17 @@ Change the schema and TypeScript breaks in both apps until they agree. That's th
 
 ## Anatomy of a schema
 
-The real `packages/contracts/src/auth.schema.ts`:
+The real `packages/contracts/src/user.schema.ts`:
 
 ```ts
 import { z } from "zod";
 
-export const LoginSchema = z.object({
+export const CreateUserSchema = z.object({
   email: z.email(),
+  displayName: z.string().min(1).max(120),
   password: z.string().min(8).max(72),
 });
-export type Login = z.infer<typeof LoginSchema>;
-
-export const AuthTokensSchema = z.object({
-  accessToken: z.string(),
-  refreshToken: z.string(),
-});
-export type AuthTokens = z.infer<typeof AuthTokensSchema>;
+export type CreateUser = z.infer<typeof CreateUserSchema>;
 ```
 
 Naming rules:
@@ -89,24 +84,27 @@ Always use `.pick()` / `.omit()` / `.partial()` / `.extend()`. Never copy field 
 
 ## How the API uses them
 
-`nestjs-zod` turns a schema into a DTO that Nest validates and Swagger can read — `apps/api/src/auth/dto/login.dto.ts`:
+`nestjs-zod` turns a schema into a DTO that Nest validates and Swagger can read — `apps/api/src/users/dto/create-user.dto.ts`:
 
 ```ts
 import { createZodDto } from "nestjs-zod";
-import { LoginSchema, RefreshTokenSchema } from "@app-platform/contracts";
+import { CreateUserSchema } from "@app-platform/contracts";
 
-export class LoginDto extends createZodDto(LoginSchema) {}
-export class RefreshTokenDto extends createZodDto(RefreshTokenSchema) {}
+export class CreateUserDto extends createZodDto(CreateUserSchema) {}
 ```
 
 Controllers use it like any DTO:
 
 ```ts
-@Post("login")
-login(@Body() body: LoginDto) {
-  return this.authService.login(body);
+@Post()
+create(@Body() body: CreateUserDto) {
+  return this.usersService.create(body);
 }
 ```
+
+::: tip Union schemas (like `TokenRequestSchema` for `/auth/token`) can't be extended into a DTO this way
+`createZodDto` needs a schema that infers to a single object type. If a schema is a `z.discriminatedUnion(...)`, TypeScript errors on `class Xxx extends createZodDto(UnionSchema) {}` because the base class's instance type is a union, not one object. The fix is to write it as a single `z.object()` where the fields that don't apply to every branch are `.optional()`, then enforce the combination with `.refine()` instead — see the real example at `packages/contracts/src/auth.schema.ts` (`TokenRequestSchema`) and [Contract schema catalog](/en/reference/contracts).
+:::
 
 The globally registered `ZodValidationPipe` in `main.ts` does the validation — no manual `.parse()` in controllers:
 
@@ -126,11 +124,11 @@ This part exists today and works correctly. <Status value="implemented" inline /
 "use client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginSchema, type Login } from "@app-platform/contracts";
+import { CreateUserSchema, type CreateUser } from "@app-platform/contracts";
 
-const form = useForm<Login>({
-  resolver: zodResolver(LoginSchema),
-  defaultValues: { email: "", password: "" },
+const form = useForm<CreateUser>({
+  resolver: zodResolver(CreateUserSchema),
+  defaultValues: { email: "", displayName: "", password: "" },
 });
 ```
 

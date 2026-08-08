@@ -58,12 +58,14 @@ const PaginatedUserSchema = paginatedSchema(UserSchema);
 
 | ชื่อ | ชนิด | รูปร่าง |
 | --- | --- | --- |
-| `LoginSchema` | schema | `{ email: email, password: string (8–72) }` |
-| `Login` | type | `z.infer<typeof LoginSchema>` |
-| `AuthTokensSchema` | schema | `{ accessToken: string, refreshToken: string }` |
-| `AuthTokens` | type | `z.infer<typeof AuthTokensSchema>` |
-| `RefreshTokenSchema` | schema | `{ refreshToken: string }` |
-| `RefreshToken` | type | `z.infer<typeof RefreshTokenSchema>` |
+| `TokenRequestSchema` | schema | `{ grant_type: "password" \| "refresh_token", username?: email, password?: string (8–72), refresh_token?: string }` + `.refine()` บังคับว่า `grant_type=password` ต้องมี `username`+`password`, `grant_type=refresh_token` ต้องมี `refresh_token` — ตาม OAuth2 password/refresh_token grant (RFC 6749) |
+| `TokenRequest` | type | `z.infer<typeof TokenRequestSchema>` — field ที่ไม่ใช้กับ grant_type นั้นยังเป็น optional ใน type เพราะ `.refine()` ไม่ narrow union ให้ ต้อง non-null assert (`!`) ที่จุดใช้งานหลังผ่าน validate แล้ว |
+| `TokenResponseSchema` | schema | `{ access_token: string, token_type: "bearer", expires_in: number, refresh_token: string }` — shape ตาม RFC 6749 §5.1 ไม่ใช่ `accessToken`/`refreshToken` แบบ camelCase |
+| `TokenResponse` | type | `z.infer<typeof TokenResponseSchema>` |
+
+::: tip ทำไมเปลี่ยนจาก `LoginSchema`/`AuthTokensSchema` เดิม
+เดิม `/auth/login` กับ `/auth/refresh` เป็นสอง endpoint แยก รับ/คืน JSON แบบ camelCase อิสระ ไม่ตรง spec ไหน — เปลี่ยนมารวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant flow เพื่อให้ Swagger UI ใช้ปุ่ม **Authorize → oauth2 (password)** ขอ token ให้อัตโนมัติได้ในตัว (ดู [OpenAPI / Swagger](/backend/openapi)) แลกกับ body ต้องเป็น `application/x-www-form-urlencoded` และ field ชื่อตาม RFC แทน camelCase
+:::
 
 ## ใครใช้ schema พวกนี้จริง ๆ
 

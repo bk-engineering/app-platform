@@ -20,8 +20,7 @@ Every endpoint that actually exists in `apps/api` today — distinct from [API c
 
 | Method | Path | Auth | Request body | Response | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/auth/login` | None | `LoginSchema` — `{ email, password }` | `AuthTokensSchema` — `{ accessToken, refreshToken }` | Throws `401` on wrong email/password (doesn't say which one) |
-| `POST` | `/auth/refresh` | None (the refresh token itself is the credential) | `RefreshTokenSchema` — `{ refreshToken }` | `AuthTokensSchema` | Verifies and immediately re-signs — **no rotation**, the old token can be reused. See [JWT & refresh rotation](/en/auth/tokens) |
+| `POST` | `/auth/token` | None | `application/x-www-form-urlencoded` per `TokenRequestSchema` — `grant_type=password` requires `username`+`password`, `grant_type=refresh_token` requires `refresh_token` (enforced by `.refine()`) | `TokenResponseSchema` — `{ access_token, token_type: "bearer", expires_in, refresh_token }` | A single endpoint combining login + refresh per the OAuth2 password/refresh_token grant (RFC 6749), so Swagger UI's **Authorize → OAuth2 (password)** can fetch and auto-attach the token itself. Throws `401` on bad credentials, `400` if fields don't match the grant_type — verifies and immediately re-signs — **no rotation**, the old token can be reused. See [JWT & refresh rotation](/en/auth/tokens) |
 
 ## Users
 
@@ -46,14 +45,14 @@ Both responses strip `passwordHash` via `toPublicUser()` in `UsersService` befor
 
 | Guard | Applies to | Behavior |
 | --- | --- | --- |
-| None | `POST /auth/login`, `POST /auth/refresh`, `GET /health`, **`POST /users`** | All public — the first three intentionally, the last one not |
-| `JwtAuthGuard` | `GET /users/:id` | Requires a valid `Authorization: Bearer <accessToken>`. Doesn't yet check [CASL/permissions](/en/auth/rbac-model) — only confirms someone is logged in, not that they may view *this* user |
+| None | `POST /auth/token`, `GET /health`, **`POST /users`** | All public — the first two intentionally, the last one not |
+| `JwtAuthGuard` | `GET /users/:id` | Requires a valid `Authorization: Bearer <access_token>` — accepts a token pasted through Swagger's bearer scheme (`access-token`) or one Swagger fetched for you via the oauth2 password flow (`oauth2`). Doesn't yet check [CASL/permissions](/en/auth/rbac-model) — only confirms someone is logged in, not that they may view *this* user |
 
 ## Spec'd but not yet real endpoints
 
 Endpoints other pages describe that the controllers don't implement — don't assume these exist without checking the controller yourself:
 
-- `POST /auth/logout` — revoke a single refresh token family ([JWT & refresh rotation](/en/auth/tokens))
+- `POST /auth/logout`, `POST /auth/revoke` — revoke a single refresh token family ([JWT & refresh rotation](/en/auth/tokens)) — OAuth2 has a standard shape for this, `POST /auth/revoke` (RFC 7009), if we want to follow the spec fully
 - `POST /auth/google`, `GET /auth/google/callback` — Google OAuth ([Signup](/en/auth/signup))
 - `POST /auth/verify-email`, `POST /auth/resend-verification` ([Email verification](/en/auth/email-verification))
 - `POST /auth/forgot-password`, `POST /auth/reset-password` ([Forgot password](/en/auth/forgot-password))

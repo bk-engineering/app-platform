@@ -262,7 +262,7 @@ server เก็บคู่ `(key, hash ของ body) -> response` ไว้ 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| ทุก route อยู่ใต้ `/v1` | ไม่มี `setGlobalPrefix` — route คือ `/auth/login`, `/users` |
+| ทุก route อยู่ใต้ `/v1` | ไม่มี `setGlobalPrefix` — route คือ `/auth/token`, `/users` |
 | endpoint แบบรายการใช้ pagination | ไม่มี endpoint แบบรายการเลย `paginatedSchema` ไม่มีใครใช้ |
 | มี sort/filter grammar | ยังไม่มี |
 | `POST /users` ต้องมี guard | **เป็น public** ใครก็สร้างบัญชีได้ |
