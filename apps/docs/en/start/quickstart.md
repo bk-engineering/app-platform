@@ -1,12 +1,11 @@
 ---
 title: Quickstart
-status: in-progress
-statusNote: the seed script fails via prisma db seed because of a tsx/ts-node mismatch
+status: implemented
 ---
 
 # Quickstart
 
-<Status value="in-progress" note="seed script has a known issue — see migrate & seed" />
+<Status value="implemented" />
 
 Goal: from a fresh clone to `app.localhost` in your browser, with sample data.
 
@@ -81,13 +80,8 @@ pnpm --filter @app-platform/api prisma:migrate
 pnpm --filter @app-platform/api prisma:seed
 ```
 
-::: warning Current code status
-| Target spec | Code today |
-| --- | --- |
-| `pnpm prisma:seed` just works | `apps/api/prisma.config.ts` sets `migrations.seed = "tsx prisma/seed.ts"`, but `tsx` is **not a dependency** (`package.json` uses `ts-node`) — so `prisma db seed` fails |
-| Seed creates starter roles and permissions | `seed.ts` only upserts one user; there are no role/permission tables to seed yet ([data model](/en/architecture/data-model)) |
-
-**Workaround today:** the `prisma:seed` script in `package.json` calls `ts-node prisma/seed.ts` directly, so it works. Use `pnpm --filter @app-platform/api prisma:seed` and avoid `prisma db seed`.
+::: tip `prisma.config.ts` and `package.json` call the same seed command now
+Both `prisma db seed` and `pnpm --filter @app-platform/api prisma:seed` run `ts-node prisma/seed.ts`, so either works. The seed script itself only upserts one user — there are no role/permission tables to seed yet, see [data model](/en/architecture/data-model).
 :::
 
 ### 5. Open it

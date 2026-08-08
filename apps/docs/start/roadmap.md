@@ -18,7 +18,7 @@ status: implemented
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
 | [boilerplate นี้คืออะไร](/start/introduction) | <Status value="implemented" inline /> | |
-| [เริ่มใช้งานใน 10 นาที](/start/quickstart) | <Status value="in-progress" inline /> | seed พังผ่าน `prisma db seed` (tsx/ts-node ไม่ตรง) |
+| [เริ่มใช้งานใน 10 นาที](/start/quickstart) | <Status value="implemented" inline /> | |
 | [ทัวร์โครงสร้าง repo](/start/repo-tour) | <Status value="implemented" inline /> | |
 | [อภิธานศัพท์](/start/glossary) | <Status value="implemented" inline /> | |
 | [ภาพรวมระบบ](/architecture/overview) | <Status value="implemented" inline /> | |

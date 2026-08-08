@@ -18,7 +18,7 @@ Badge meanings live at [Status legend](/en/reference/status-legend).
 | Page | Status | Note |
 | --- | --- | --- |
 | [What is this boilerplate](/en/start/introduction) | <Status value="implemented" inline /> | |
-| [Quickstart](/en/start/quickstart) | <Status value="in-progress" inline /> | seed fails via `prisma db seed` (tsx/ts-node mismatch) |
+| [Quickstart](/en/start/quickstart) | <Status value="implemented" inline /> | |
 | [Repo tour](/en/start/repo-tour) | <Status value="implemented" inline /> | |
 | [Glossary](/en/start/glossary) | <Status value="implemented" inline /> | |
 | [System overview](/en/architecture/overview) | <Status value="implemented" inline /> | |

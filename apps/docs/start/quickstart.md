@@ -1,12 +1,11 @@
 ---
 title: เริ่มใช้งานใน 10 นาที
-status: in-progress
-statusNote: seed script ยังรันไม่ผ่านเพราะ tsx/ts-node ไม่ตรงกัน
+status: implemented
 ---
 
 # เริ่มใช้งานใน 10 นาที
 
-<Status value="in-progress" note="seed script ยังมีปัญหา ดูหัวข้อ migrate & seed" />
+<Status value="implemented" />
 
 เป้าหมาย: จาก repo เปล่า → เปิด `app.localhost` ได้ พร้อมข้อมูลตัวอย่าง
 
@@ -81,13 +80,8 @@ pnpm --filter @app-platform/api prisma:migrate
 pnpm --filter @app-platform/api prisma:seed
 ```
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| `pnpm prisma:seed` รันได้ทันที | `apps/api/prisma.config.ts` ตั้ง `migrations.seed = "tsx prisma/seed.ts"` แต่ `tsx` **ไม่ได้อยู่ใน dependency** (`package.json` ใช้ `ts-node`) — สั่งผ่าน `prisma db seed` จะพัง |
-| seed ใส่ role/permission ตั้งต้น | `seed.ts` upsert แค่ user เดียว ยังไม่มีตาราง role/permission ให้ seed ([data model](/architecture/data-model)) |
-
-**ทางเลี่ยงตอนนี้:** สคริปต์ `prisma:seed` ใน `package.json` เรียก `ts-node prisma/seed.ts` โดยตรง จึงรันผ่าน ให้ใช้คำสั่ง `pnpm --filter @app-platform/api prisma:seed` อย่าเรียก `prisma db seed`
+::: tip `prisma.config.ts` กับ `package.json` เรียก seed ตัวเดียวกันแล้ว
+ทั้ง `prisma db seed` และ `pnpm --filter @app-platform/api prisma:seed` เรียก `ts-node prisma/seed.ts` เหมือนกัน ใช้คำสั่งไหนก็ได้ (seed ตอนนี้ upsert แค่ user เดียว — role/permission ยังไม่มีตารางให้ seed ดู [data model](/architecture/data-model))
 :::
 
 ### 5. เปิดใช้งาน
