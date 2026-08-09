@@ -7,6 +7,7 @@ import type { CreateUser, PaginationQuery, UpdateUser } from "@app-platform/cont
 import bcrypt from "bcryptjs";
 import { UsersRepository } from "./users.repository";
 import { Errors } from "../common/errors/app.exception";
+import { getTraceId } from "../common/trace/trace-context";
 import type { AppAbility } from "../auth/ability/ability.types";
 
 function toPublicUser<T extends { passwordHash: string | null }>(user: T) {
@@ -70,7 +71,7 @@ export class UsersService {
       displayName: input.displayName,
       passwordHash,
     });
-    this.logger.info({ userId: user.id }, "user registered");
+    this.logger.info({ traceId: getTraceId(), userId: user.id }, "user registered");
     return toPublicUser(user);
   }
 }

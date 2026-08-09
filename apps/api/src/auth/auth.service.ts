@@ -8,6 +8,7 @@ import type { TokenResponse } from "@app-platform/contracts";
 import { UsersService } from "../users/users.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import { Errors } from "../common/errors/app.exception";
+import { getTraceId } from "../common/trace/trace-context";
 
 interface RequestMeta {
   userAgent?: string;
@@ -27,17 +28,17 @@ export class AuthService {
   async login(email: string, password: string, meta: RequestMeta): Promise<TokenResponse> {
     const user = await this.usersService.findByEmail(email);
     if (!user || !user.passwordHash) {
-      this.logger.warn({ email }, "login failed: unknown email");
+      this.logger.warn({ traceId: getTraceId(), email }, "login failed: unknown email");
       throw Errors.invalidCredentials();
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
-      this.logger.warn({ userId: user.id }, "login failed: wrong password");
+      this.logger.warn({ traceId: getTraceId(), userId: user.id }, "login failed: wrong password");
       throw Errors.invalidCredentials();
     }
 
-    this.logger.info({ userId: user.id }, "login succeeded");
+    this.logger.info({ traceId: getTraceId(), userId: user.id }, "login succeeded");
     const familyId = this.refreshTokens.newFamilyId();
     const refreshToken = await this.refreshTokens.issue(user.id, familyId, meta);
     return this.signAccessToken(user.id, user.email, refreshToken);

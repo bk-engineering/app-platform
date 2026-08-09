@@ -3,6 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { Errors } from "../../common/errors/app.exception";
 import { IS_PUBLIC } from "../../common/decorators/public.decorator";
+import { getTraceId } from "../../common/trace/trace-context";
 import type { AuthenticatedRequest } from "../../common/types/authenticated-request";
 import { AbilityFactory } from "./ability.factory";
 import type { AppAbility } from "./ability.types";
@@ -36,7 +37,7 @@ export class PoliciesGuard implements CanActivate {
 
     if (handlers.every((handler) => handler(ability, req))) return true;
 
-    this.logger.warn({ userId: req.user?.id, path: req.path }, "permission denied");
+    this.logger.warn({ traceId: getTraceId(), userId: req.user?.id, path: req.path }, "permission denied");
     throw Errors.forbidden("perform this action on", "resource");
   }
 }

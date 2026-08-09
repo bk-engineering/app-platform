@@ -20,8 +20,11 @@ export class UsersRepository {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  /** every user needs at least one role or CASL grants them nothing at all — "member" is the baseline */
   create(data: CreateUserRow): Promise<User> {
-    return this.prisma.user.create({ data });
+    return this.prisma.user.create({
+      data: { ...data, roles: { create: { role: { connect: { key: "member" } } } } },
+    });
   }
 
   update(id: string, data: { displayName?: string }): Promise<User> {
