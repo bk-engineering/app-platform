@@ -14,5 +14,21 @@
     "submitting": "Logging in…",
     "invalidCredentials": "Invalid email or password.",
     "genericError": "Something went wrong. Please try again."
+  },
+  "ComingSoon": {
+    "title": "Coming soon",
+    "body": "This page isn't built yet."
+  },
+  "UsersPage": {
+    "title": "Users",
+    "email": "Email",
+    "displayName": "Name",
+    "createdAt": "Created",
+    "loading": "Loading…",
+    "error": "Couldn't load users."
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "retry": "Try again"
   }
 }

@@ -1,12 +1,11 @@
 ---
 title: โครงสร้างโฟลเดอร์ · web
-status: in-progress
-statusNote: มีแค่ route เดียวและปุ่มที่เขียนเอง ไม่ใช่ของจริงจาก shadcn
+status: implemented
 ---
 
 # โครงสร้างโฟลเดอร์ · web
 
-<Status value="in-progress" note="มีแค่ route เดียว" />
+<Status value="implemented" />
 
 [ทัวร์โครงสร้าง repo](/start/repo-tour) ให้ภาพกว้างของ `apps/web` หน้านี้ลงรายละเอียดผังโฟลเดอร์เต็มตามสเปกเป้าหมาย
 
@@ -21,9 +20,10 @@ apps/web/src/
 │   └── [locale]/                ทุกหน้าอยู่ใต้ locale segment
 │       ├── layout.tsx           NextIntlClientProvider + shell (nav/sidebar)
 │       ├── page.tsx             หน้าแรก
+│       ├── error.tsx            client error boundary — ส่งไป POST /v1/client-errors
 │       ├── (auth)/               route group — ไม่ต้อง login
 │       │   ├── login/page.tsx
-│       │   └── signup/page.tsx
+│       │   └── signup/page.tsx   ยัง planned — ดู /auth/signup
 │       └── (app)/                route group — ต้อง login
 │           ├── dashboard/page.tsx
 │           ├── settings/
@@ -50,7 +50,7 @@ apps/web/src/
 └── proxy.ts                     middleware ของ Next 16 (ชื่อใหม่ของ middleware.ts)
 ```
 
-โฟลเดอร์ที่มีอยู่จริงวันนี้คือ `app/layout.tsx`, `app/[locale]/{layout,page}.tsx`, `i18n/`, `proxy.ts`, และ `components/ui/button.tsx` หนึ่งไฟล์ — ที่เหลือคือเป้าหมาย
+โฟลเดอร์ที่มีอยู่จริงวันนี้คือ `app/layout.tsx`, `app/[locale]/{layout,page,error}.tsx`, `app/[locale]/(auth)/login/`, `app/[locale]/(app)/{dashboard,profile,settings/*}/` (placeholder — ยังไม่มีฟีเจอร์จริง รอ [หน้าผลิตภัณฑ์](/start/roadmap) แต่ละหน้าถูก implement), `i18n/`, `lib/{api-client,auth,session,ability,utils}.ts`, `hooks/use-session.ts`, `proxy.ts` — `(auth)/signup/` ยังไม่มีเพราะ [สมัครสมาชิก](/auth/signup) ยัง planned
 
 ## กฎการแบ่งตามฟีเจอร์
 
@@ -130,12 +130,8 @@ flowchart LR
 
 `components/ui/` ไม่ import อะไรนอกจาก library ภายนอก (Radix, `class-variance-authority`) — มันคือฐานที่ทุกอย่างอ้างอิงลงมา ไม่ใช่จุดที่พึ่งพา domain logic
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| route group `(auth)` / `(app)` + หน้าจริง | มีแค่ `app/[locale]/page.tsx` เพจเดียว |
-| `components/ui/` จาก shadcn CLI | `button.tsx` เขียนเอง ไม่มี Radix, อ้าง token `bg-brand-600` ที่ไม่มีนิยาม — [Roadmap](/start/roadmap) หนี้ #10 |
-| `lib/api-client.ts`, `lib/ability.ts` | ไม่มี |
-| `hooks/` | ไม่มีโฟลเดอร์นี้ |
-| `i18n/`, `proxy.ts` | มีอยู่จริงและตรงกับผังเป้าหมาย |
+route group `(auth)`/`(app)` มีจริงแล้ว (`(app)/layout.tsx` redirect ไป `/login` ถ้ายังไม่มี session), `lib/api-client.ts` และ `lib/ability.ts` มีคนใช้จริง (`settings/users/page.tsx` ดึงรายชื่อผู้ใช้จริงผ่าน `paginatedSchema(UserSchema)`), `hooks/use-session.ts` มีอยู่
+
+::: tip `components/ui/` ยังเป็น component ที่เขียนเอง ไม่ใช่จาก shadcn CLI — ตั้งใจ
+เป็นขอบเขตของ [UI system](/frontend/ui-system) ซึ่งยัง planned แยกต่างหาก หน้านี้ว่าด้วยโครงสร้างโฟลเดอร์/route เท่านั้น ไม่ใช่ความสมบูรณ์ของ component library
 :::

@@ -36,6 +36,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.warn(envelope, "request failed");
     }
 
+    // lets the client tell "token expired, refresh" apart from "no token at all"
+    if (status === HttpStatus.UNAUTHORIZED) {
+      res.setHeader("WWW-Authenticate", 'Bearer realm="api", error="invalid_token"');
+    }
+
     res.status(status).json(envelope);
   }
 }

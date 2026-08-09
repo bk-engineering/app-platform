@@ -1,12 +1,11 @@
 ---
 title: Trace ID
 status: implemented
-statusNote: TraceIdMiddleware + AsyncLocalStorage ทำงานจริงแล้ว ฝั่ง client ยังไม่มี
 ---
 
 # Trace ID
 
-<Status value="implemented" note="ฝั่ง server ครบ ฝั่ง client (api-client) ยังไม่มี" />
+<Status value="implemented" />
 
 > **หนึ่ง request หนึ่ง id และ id นั้นปรากฏบนทุกบรรทัด log ที่เกี่ยวข้อง — ตั้งแต่เบราว์เซอร์จนถึง SQL**
 
@@ -244,13 +243,11 @@ const traceId = traceparent?.split("-")[1] ?? req.header(TRACE_HEADER) ?? uuidv7
 
 ค่าที่ `getTraceId()` คืนยังเป็นตัวเดียวกันทั้งระบบ จึงเปลี่ยนได้โดยไม่ต้องแก้โค้ดที่เรียกใช้
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
+| สเปกเป้าหมาย | สถานะ |
 | --- | --- |
 | `TraceIdMiddleware` + `AsyncLocalStorage` | ✅ ครอบทุก route |
 | `genReqId` ผูกกับ header | ✅ |
 | `redact` header ที่มีความลับ | ✅ (`authorization`, `cookie`, `set-cookie`) |
 | Prisma log ผูก trace id | ✅ `PrismaService` subscribe event `query` |
-| client ส่ง `x-request-id` | ยังไม่มี — `apps/web` ยังไม่มี api client เลย นอกขอบเขตรอบนี้ |
-| UI แสดง trace id | ยังไม่มีการจัดการ error บน UI |
-:::
+| client ส่ง `x-request-id` | ✅ `apps/web/src/lib/api-client.ts` แนบทุก request |
+| UI แสดง trace id | ✅ `app/[locale]/error.tsx` ส่ง traceId ไปที่ `POST /v1/client-errors` — log ฝั่ง server ต่อกับ error ฝั่ง client ด้วย id เดียวกันได้ |

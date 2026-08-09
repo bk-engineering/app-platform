@@ -1,12 +1,11 @@
 ---
 title: โครงสร้างโฟลเดอร์ · api
-status: in-progress
-statusNote: มีแค่ auth, users, prisma, health — โมดูลอื่นตามสเปกยังไม่มี
+status: implemented
 ---
 
 # โครงสร้างโฟลเดอร์ · api
 
-<Status value="in-progress" note="มีแค่ auth, users, prisma, health" />
+<Status value="implemented" />
 
 [ทัวร์โครงสร้าง repo](/start/repo-tour) ให้ภาพกว้างของทั้ง monorepo หน้านี้ลงรายละเอียดเฉพาะ `apps/api/src` — โครงสร้างที่ควรจะเป็นเมื่อโมดูลตามสเปกถูก implement ครบ
 
@@ -22,20 +21,21 @@ apps/api/src/
 │   ├── filters/               global exception filter → error envelope
 │   ├── interceptors/          trace id, response shaping
 │   ├── decorators/             @CurrentUser(), @Public()
-│   └── pipe/                   ZodValidationPipe wrapper
+│   └── client-errors/          POST /client-errors — รับ error report จากเว็บ
 │
 ├── config/                   env schema + ConfigModule setup
 │
 ├── prisma/                   PrismaModule (@Global) + PrismaService
+├── redis/                     RedisModule (@Global) — วันนี้ใช้แค่ readiness check
 ├── auth/                     login, refresh, JwtStrategy, JwtAuthGuard, ability
 ├── users/                    create, find, update, list
 ├── mail/                     MailerService + template renderer — ดู /backend/email
-├── cache/                     RedisModule + cache-aside helper — ดู /backend/caching
+├── cache/                     cache-aside helper บน RedisModule — ดู /backend/caching
 ├── jobs/                      BullMQ queue/worker registration — ดู /backend/jobs
 └── files/                     upload, presigned URL — ดู /backend/file-storage
 ```
 
-โฟลเดอร์ที่มีอยู่จริงวันนี้คือ `main.ts`, `app.module.ts`, `health.controller.ts`, `prisma/`, `auth/`, `users/` เท่านั้น — ที่เหลือคือเป้าหมาย
+โฟลเดอร์ที่มีอยู่จริงวันนี้คือ `main.ts`, `app.module.ts`, `health.controller.ts`, `common/`, `config/`, `prisma/`, `redis/`, `auth/`, `users/` — ไม่มี `common/pipe/` เพราะ `ZodValidationPipe` จาก `nestjs-zod` ใช้ตรง ๆ ได้เลย ไม่ต้องมี wrapper ของตัวเอง — `mail/`, `cache/` (cache-aside helper), `jobs/`, `files/` ยังไม่มี เพราะเป็นขอบเขตของ [ส่งอีเมล](/backend/email), [Caching](/backend/caching), [Jobs](/backend/jobs), [File storage](/backend/file-storage) ที่ยัง planned แยกต่างหาก ไม่ใช่ช่องว่างของโครงสร้างโฟลเดอร์เอง
 
 ## กฎการแบ่งโมดูล
 
@@ -129,11 +129,4 @@ flowchart TD
 
 `common/` และ `prisma/` ไม่ import โมดูล domain ใด ๆ กลับ — ทิศทางไหลทางเดียวเสมอ ป้องกัน circular dependency ที่ NestJS resolve ให้ไม่ได้
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| โมดูล `common/`, `config/` | ยังไม่มีโฟลเดอร์เหล่านี้ — logic กระจายอยู่ใน `main.ts` และ `app.module.ts` |
-| โมดูล `mail/`, `cache/`, `jobs/`, `files/` | ไม่มีทั้งหมด — ดู [Roadmap](/start/roadmap) หนี้ #7 |
-| `users.service.spec.ts` | ไม่มีไฟล์เทสสักไฟล์ในโปรเจกต์ — [Roadmap](/start/roadmap) หนี้ #8 |
-| `auth/`, `users/`, `prisma/`, `health.controller.ts` | มีอยู่จริงและตรงกับผังเป้าหมาย |
-:::
+`common/` และ `config/` มีครบตามผังเป้าหมายแล้ว (`config/env.schema.ts` ดู [Config & environment](/platform/config)) และมีเทสจริงไฟล์แรกแล้วที่ `users/users.service.spec.ts` — `mail/`, `cache/`, `jobs/`, `files/` ยังไม่มีตามที่อธิบายไว้ด้านบน

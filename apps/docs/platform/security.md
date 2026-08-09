@@ -1,12 +1,11 @@
 ---
 title: Security checklist
-status: planned
-statusNote: "CORS เปิดกว้างทุก origin, ไม่มี helmet, ไม่มี rate limit"
+status: implemented
 ---
 
 # Security checklist
 
-<Status value="planned" note="ช่องโหว่พื้นฐานสามเรื่องยังเปิดอยู่วันนี้" />
+<Status value="implemented" />
 
 > **หน้านี้ไม่ใช่ทฤษฎีความปลอดภัย เป็นรายการสิ่งที่ต้องปิดก่อนที่ boilerplate นี้จะพร้อมรับ traffic จริง**
 
@@ -31,20 +30,7 @@ flowchart TD
 
 ## 1. CORS
 
-### ปัญหาวันนี้
-
-```ts
-// apps/api/src/main.ts
-app.enableCors();
-```
-
-`enableCors()` แบบไม่ใส่ options หมายถึง **`Access-Control-Allow-Origin: *`** — ทุกเว็บในโลกยิง fetch มาที่ API นี้ได้จากฝั่ง browser ถ้า endpoint ไหนอ่าน cookie หรือใช้ credentials ก็ยิ่งอันตราย เพราะเบราว์เซอร์อาจส่ง credential ของผู้ใช้ที่ล็อกอินอยู่ไปให้เว็บอื่นโดยผู้ใช้ไม่รู้ตัว
-
-::: danger CORS แบบเปิดกว้าง + cookie แบบ httpOnly = ช่องโหว่ CSRF
-[refresh token เก็บใน httpOnly cookie](/auth/tokens) ถ้า CORS ไม่จำกัด origin เว็บอื่นฝัง `<script>` ที่ยิง `fetch(apiUrl, { credentials: "include" })` แล้วเบราว์เซอร์แนบ cookie ของผู้ใช้ไปให้อัตโนมัติได้ ต้องแก้ก่อน production ไม่ใช่ "ทำทีหลัง"
-:::
-
-### เป้าหมาย
+### ของจริงวันนี้
 
 ```ts
 // apps/api/src/main.ts
@@ -60,11 +46,7 @@ app.enableCors({
 
 ## 2. Security headers (helmet)
 
-### ปัญหาวันนี้
-
-ไม่มี `helmet` ใน `package.json` ของ `apps/api` เลย — ไม่มี `Content-Security-Policy`, ไม่มี `X-Content-Type-Options`, ไม่มี `Strict-Transport-Security` response header ทุกตัวออกไปแบบ default ของ Express
-
-### เป้าหมาย
+### ของจริงวันนี้
 
 ```ts
 // apps/api/src/main.ts
@@ -98,11 +80,7 @@ app.use(
 
 ## 3. Rate limiting
 
-### ปัญหาวันนี้
-
-ไม่มี `@nestjs/throttler` หรือกลไก rate limit ใด ๆ ในระบบ — `POST /users` (ดู [สมัครสมาชิก](/auth/signup)) และ endpoint login รับ request ได้ไม่จำกัดจาก IP เดียว เปิดช่องให้ brute-force รหัสผ่านและ spam สร้างบัญชีได้อย่างอิสระ
-
-### เป้าหมาย
+### ของจริงวันนี้
 
 ```ts
 // apps/api/src/app.module.ts
@@ -116,9 +94,11 @@ ThrottlerModule.forRoot([
 // apps/api/src/auth/auth.controller.ts
 @Throttle({ auth: { limit: 5, ttl: 60_000 } })
 @Public()
-@Post("login")
-login(@Body() dto: Login) { … }
+@Post("token")
+token(@Body() body: TokenRequestDto) { … }
 ```
+
+`POST /v1/users` ไม่ใช่ endpoint สมัครสมาชิกสาธารณะ (ต้อง login + สิทธิ์ `create User` ก่อน ดู [ข้อตกลงของ API](/conventions/api-conventions)) จึงใช้โควตา `default` เฉย ๆ พอ — `forgot-password` ในตารางด้านล่างยังเป็นเป้าหมายเพราะ endpoint นั้นเองยัง planned ([ลืมรหัสผ่าน](/auth/forgot-password))
 
 | Endpoint | โควตาที่แนะนำ | เหตุผล |
 | --- | --- | --- |
@@ -157,12 +137,4 @@ login(@Body() dto: Login) { … }
 - [ ] dependency scanning อยู่ใน CI (เมื่อ CI มีอยู่)
 - [ ] ไม่มี secret ใดมี default ใน [`EnvSchema`](/platform/config)
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| CORS จำกัด origin | `app.enableCors()` ไม่มี options — เปิดกว้างทุก origin |
-| `helmet()` ตั้ง security headers | ไม่มี `helmet` ใน `package.json` เลย |
-| `ThrottlerModule` ทั่วแอป | ไม่มี `@nestjs/throttler` เลย — ไม่มี rate limit ใด ๆ |
-| throttle เข้มที่ auth endpoint | ไม่มี เพราะไม่มี throttler เลย |
-| dependency scanning ใน CI | ไม่มี CI — ดู [CI/CD](/ops/ci-cd) |
-:::
+CORS จำกัด origin ผ่าน `CORS_ORIGINS`, `helmet()` ตั้ง security headers, `ThrottlerModule` ครอบทั้งแอปพร้อม throttle เข้มกว่าที่ `POST /v1/auth/token` — ครบทั้งสามชั้นแล้ว dependency scanning ใน CI ยังไม่มีเพราะยังไม่มี CI เลย ดู [CI/CD](/ops/ci-cd)

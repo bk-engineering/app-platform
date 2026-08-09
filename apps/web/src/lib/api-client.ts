@@ -1,9 +1,10 @@
 import { v7 as uuidv7 } from "uuid";
 import type { z } from "zod";
 import { ErrorEnvelopeSchema, TokenResponseSchema, type ErrorEnvelope } from "@app-platform/contracts";
+import { env } from "./env";
 import { clearSession, getSession, setSession } from "./session";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://api.localhost";
+const API_BASE_URL = env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   readonly status: number;
@@ -46,7 +47,7 @@ async function doRefresh(): Promise<void> {
   const current = getSession();
   if (!current) throw new ApiError(401, unauthenticatedEnvelope());
 
-  const tokens = await request("/auth/token", TokenResponseSchema, {
+  const tokens = await request("/v1/auth/token", TokenResponseSchema, {
     method: "POST",
     body: { grant_type: "refresh_token", refresh_token: current.refreshToken },
     skipAuth: true,
@@ -74,7 +75,7 @@ export async function request<T>(
   const traceId = uuidv7();
   const session = options.skipAuth ? null : getSession();
 
-  const isFormEncoded = path === "/auth/token";
+  const isFormEncoded = path === "/v1/auth/token";
   const headers: Record<string, string> = {
     "x-request-id": traceId,
     ...(isFormEncoded

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 type CreateUserRow = {
@@ -22,5 +22,16 @@ export class UsersRepository {
 
   create(data: CreateUserRow): Promise<User> {
     return this.prisma.user.create({ data });
+  }
+
+  update(id: string, data: { displayName?: string }): Promise<User> {
+    return this.prisma.user.update({ where: { id }, data });
+  }
+
+  async list(where: Prisma.UserWhereInput, skip: number, take: number) {
+    return this.prisma.$transaction([
+      this.prisma.user.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
+      this.prisma.user.count({ where }),
+    ]);
   }
 }

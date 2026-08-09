@@ -31,16 +31,16 @@ status: implemented
 
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
-| [Contract-first](/conventions/contract-first) | <Status value="in-progress" inline /> | contracts ใช้กับ api แล้ว ฝั่ง web ยังไม่ได้ใช้ |
-| [ข้อตกลงของ API](/conventions/api-conventions) | <Status value="in-progress" inline /> | ไม่มี `/v1` prefix, `paginatedSchema` ยังไม่มีใครใช้ |
+| [Contract-first](/conventions/contract-first) | <Status value="implemented" inline /> | api และ web ใช้ schema จาก contracts ทั้งคู่ |
+| [ข้อตกลงของ API](/conventions/api-conventions) | <Status value="implemented" inline /> | `/v1` prefix, pagination, `WWW-Authenticate` ครบ |
 | [Error envelope](/conventions/errors) | <Status value="implemented" inline /> | |
-| [โครงสร้างโฟลเดอร์ · api](/conventions/structure-api) | <Status value="in-progress" inline /> | มีแค่ auth, users, prisma, health, common |
-| [โครงสร้างโฟลเดอร์ · web](/conventions/structure-web) | <Status value="in-progress" inline /> | มีแค่ route เดียว |
-| [Trace ID](/platform/trace-id) | <Status value="implemented" inline /> | ฝั่ง server ครบ ฝั่ง client ยังไม่มี |
-| [Config & environment](/platform/config) | <Status value="planned" inline /> | `ConfigModule` ไม่มี `validate` |
-| [Observability & logging](/platform/observability) | <Status value="in-progress" inline /> | pino ผูกกับ trace id แล้ว ยังไม่มี dashboard/alert |
-| [Health checks](/platform/health) | <Status value="in-progress" inline /> | `GET /health` เป็น liveness เฉย ๆ ไม่เช็ค DB/Redis |
-| [Security checklist](/platform/security) | <Status value="planned" inline /> | CORS เปิดกว้าง, ไม่มี helmet, ไม่มี rate limit |
+| [โครงสร้างโฟลเดอร์ · api](/conventions/structure-api) | <Status value="implemented" inline /> | มี `config/` แล้ว มีเทสแรกแล้ว |
+| [โครงสร้างโฟลเดอร์ · web](/conventions/structure-web) | <Status value="implemented" inline /> | มี route group `(auth)`/`(app)` แล้ว |
+| [Trace ID](/platform/trace-id) | <Status value="implemented" inline /> | ฝั่ง server และ client ครบ |
+| [Config & environment](/platform/config) | <Status value="implemented" inline /> | `ConfigModule` validate ตอนบูตแล้ว |
+| [Observability & logging](/platform/observability) | <Status value="implemented" inline /> | มี log ระดับ business event และ web error reporting แล้ว |
+| [Health checks](/platform/health) | <Status value="implemented" inline /> | `/health/live` และ `/health/ready` เช็ค Postgres/Redis |
+| [Security checklist](/platform/security) | <Status value="implemented" inline /> | CORS allowlist, helmet, rate limit ครบ |
 
 ### Auth & สิทธิ์
 

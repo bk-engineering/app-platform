@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { InjectPinoLogger, PinoLogger } from "nestjs-pino";
 import { Errors } from "../../common/errors/app.exception";
 import { IS_PUBLIC } from "../../common/decorators/public.decorator";
 import type { AuthenticatedRequest } from "../../common/types/authenticated-request";
@@ -16,6 +17,7 @@ export class PoliciesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly abilityFactory: AbilityFactory,
+    @InjectPinoLogger(PoliciesGuard.name) private readonly logger: PinoLogger,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -33,6 +35,8 @@ export class PoliciesGuard implements CanActivate {
     req.ability = ability;
 
     if (handlers.every((handler) => handler(ability, req))) return true;
+
+    this.logger.warn({ userId: req.user?.id, path: req.path }, "permission denied");
     throw Errors.forbidden("perform this action on", "resource");
   }
 }

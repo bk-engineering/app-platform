@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@app-platform/contracts": "workspace:*",
+    "@casl/ability": "^7.0.1",
     "@hookform/resolvers": "^5.7.0",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-query-devtools": "^5.101.4",

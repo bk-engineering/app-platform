@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 import { ApiErrorResponses } from "../common/decorators/api-error-responses.decorator";
 import { Public } from "../common/decorators/public.decorator";
@@ -13,6 +14,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @ApiConsumes("application/x-www-form-urlencoded")
   @ApiOkResponse({ type: TokenResponseDto })
   @ApiErrorResponses()

@@ -1,12 +1,11 @@
 ---
 title: Config & environment
-status: planned
-statusNote: ConfigModule ไม่มี validate — env ผิดจะไปพังตอน runtime
+status: implemented
 ---
 
 # Config & environment
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **ตั้ง env ผิด ต้องตายตั้งแต่ตอนบูต ไม่ใช่ไปพังตอนมีคนใช้งาน**
 
@@ -40,8 +39,12 @@ flowchart TD
 
 ## Schema ของ env
 
+::: tip โค้ดจริงแคบกว่าตัวอย่างด้านล่าง — ตั้งใจ
+`apps/api/src/config/env.schema.ts` วันนี้มีแค่ field ที่โค้ดใช้จริง (ไม่มี `JWT_REFRESH_SECRET`, `GOOGLE_*`, `MAIL_*` เพราะฟีเจอร์เหล่านั้นยังไม่ implement) ตัวอย่างเต็มด้านล่างคือ spec เป้าหมายเมื่อฟีเจอร์เหล่านั้นถูกสร้าง — เพิ่ม field ใหม่ตามที่อธิบายในหัวข้อ [เพิ่ม env ตัวใหม่](#เพิ่ม-env-ตัวใหม่) ด้านล่าง
+:::
+
 ```ts
-// apps/api/src/config/env.schema.ts
+// apps/api/src/config/env.schema.ts — สเปกเป้าหมายเต็ม (โค้ดจริงมีแค่ field ที่ใช้งานอยู่)
 import { z } from "zod";
 
 export const EnvSchema = z.object({
@@ -206,13 +209,4 @@ export const env = PublicEnvSchema.parse({
 | `LOG_LEVEL=debug` เฉพาะ non-production | debug log มีข้อมูล query |
 | redact header ที่มีความลับใน log | ดู [Trace ID](/platform/trace-id) |
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| `ConfigModule.forRoot({ validate })` | `ConfigModule.forRoot({ isGlobal: true })` เฉย ๆ ไม่ validate อะไรเลย |
-| ไม่มีที่ไหนอ่าน `process.env` ตรง ๆ | `main.ts` อ่าน `API_PORT` และ `app.module.ts` อ่าน `LOG_LEVEL`/`NODE_ENV` ตรง ๆ |
-| `EnvSchema` ใน `src/config/` | ไม่มีโฟลเดอร์ `src/config/` |
-| `CORS_ORIGINS` เป็น allowlist | `main.ts` เรียก `enableCors()` เปล่า = อนุญาตทุก origin |
-| ฝั่ง web validate env | ไม่มี — `NEXT_PUBLIC_API_URL` ไม่ถูกอ้างถึงเลยในโค้ด |
-| บล็อก secret ที่เป็น `change-me` | ไม่มีการตรวจ |
-:::
+`ConfigModule.forRoot({ validate: validateEnv, cache: true })` ทำงานจริงแล้ว — ตั้ง env ผิดหรือใช้ secret ตัวอย่าง (`change-me...`) แอปจะไม่บูตขึ้นเลย, `main.ts`/`app.module.ts` อ่านผ่าน `ConfigService` ทั้งหมด ไม่มีที่ไหนแตะ `process.env` ตรง ๆ นอกจาก entrypoint ก่อนบูต, `CORS_ORIGINS` เป็น allowlist จริงแล้ว (ดู [Security checklist](/platform/security)), และฝั่ง web มี `apps/web/src/lib/env.ts` validate `NEXT_PUBLIC_API_URL` ตอน import module

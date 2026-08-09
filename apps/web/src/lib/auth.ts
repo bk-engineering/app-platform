@@ -10,7 +10,7 @@ export const MeResponseSchema = z.object({
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 
 export async function login(email: string, password: string): Promise<void> {
-  const tokens = await request("/auth/token", TokenResponseSchema, {
+  const tokens = await request("/v1/auth/token", TokenResponseSchema, {
     method: "POST",
     body: { grant_type: "password", username: email, password },
     skipAuth: true,
@@ -23,5 +23,5 @@ export function logout(): void {
 }
 
 export function getMe(): Promise<MeResponse> {
-  return request("/auth/me", MeResponseSchema);
+  return request("/v1/auth/me", MeResponseSchema);
 }

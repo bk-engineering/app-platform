@@ -1,12 +1,11 @@
 ---
 title: Health checks
-status: in-progress
-statusNote: "GET /health มีจริง แต่เป็น liveness เฉย ๆ ไม่ได้เช็ค DB/Redis"
+status: implemented
 ---
 
 # Health checks
 
-<Status value="in-progress" note="มี liveness check แล้ว ยังไม่มี readiness" />
+<Status value="implemented" />
 
 > **liveness ตอบว่า "process ยังไม่ตาย" readiness ตอบว่า "รับ traffic ได้จริง" สองคำถามนี้ไม่ใช่คำถามเดียวกัน**
 
@@ -153,42 +152,15 @@ services:
 
 ## Endpoint ปัจจุบัน (ของจริง)
 
-`GET /health` ใน `apps/api/src/health.controller.ts` ทำงานอยู่แล้ววันนี้
+`apps/api/src/health.controller.ts` มีครบทั้งสามทางเข้าแล้ว — `GET /health/live` (ไม่แตะ dependency), `GET /health/ready` (เช็ค Postgres ผ่าน `PrismaService.$queryRaw` และ Redis ผ่าน `RedisService.ping()`, คืน `503` เมื่อ degraded), และ `GET /health` เดิมที่ยังอยู่เป็น alias ของ `/health/live` เพื่อไม่ทำลาย config เดิม ทั้งหมด `@Public()` และ `@ApiExcludeController()`
 
-```ts
-@ApiExcludeController()
-@Controller("health")
-export class HealthController {
-  @Get()
-  check() {
-    return { status: "ok", checkedAt: new Date().toISOString() };
-  }
-}
-```
-
-เป็น liveness check ล้วน ๆ — ตอบทันทีไม่แตะ DB หรือ Redis เลย `@ApiExcludeController()` กันไม่ให้โผล่ใน Swagger ซึ่งถูกแล้ว (health endpoint ไม่ใช่ business API) แต่ยังไม่มี guard แยก public/private เพราะทั้ง controller ไม่มี guard เลยตอนนี้
-
-## แผนย้าย
-
-1. เพิ่ม `GET /health/ready` ควบคู่ไปกับ `GET /health` เดิม (ยังไม่ลบของเก่า)
-2. ย้าย `GET /health` ให้เป็น alias ของ `/health/live` เพื่อไม่ทำลาย healthcheck ของ Docker Compose ที่อ้างอิงอยู่
-3. อัปเดต `docker-compose.yml` ให้ชี้ไปที่ `/health/ready`
-4. ลบ `GET /health` เดิมทิ้งได้เมื่อ config อื่นทั้งหมดย้ายมาใช้ path ใหม่แล้ว
+`docker-compose.yml` service `api` มี `healthcheck:` block ชี้ไปที่ `/health/ready` แล้ว พร้อม `start_period: 20s`
 
 ## เช็กลิสต์
 
-- [ ] `GET /health/live` — ไม่แตะ dependency ใด ๆ
-- [ ] `GET /health/ready` — เช็ค Postgres และ Redis
-- [ ] readiness คืน `503` เมื่อ degraded ไม่ใช่ `200`
-- [ ] ทั้งสอง endpoint เป็น `@Public()` และไม่โผล่ใน Swagger
-- [ ] `docker-compose.yml` healthcheck ชี้ไปที่ `/health/ready`
-- [ ] `start_period` ให้เวลาพอสำหรับตอน container เพิ่งบูต
-
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| `GET /health/live` แยกจาก `/ready` | มีแค่ `GET /health` ตัวเดียว ทำหน้าที่เป็น liveness |
-| `GET /health/ready` เช็ค Postgres/Redis | ไม่มี — ไม่มีการเช็คการเชื่อมต่อใด ๆ เลย |
-| คืน `503` เมื่อ degraded | ไม่มีแนวคิด degraded ในโค้ดตอนนี้ |
-| `docker-compose.yml` healthcheck ผูกกับ readiness | ยังไม่มี `healthcheck:` block ใน service `api` เลย |
-:::
+- [x] `GET /health/live` — ไม่แตะ dependency ใด ๆ
+- [x] `GET /health/ready` — เช็ค Postgres และ Redis
+- [x] readiness คืน `503` เมื่อ degraded ไม่ใช่ `200`
+- [x] ทั้งสอง endpoint เป็น `@Public()` และไม่โผล่ใน Swagger
+- [x] `docker-compose.yml` healthcheck ชี้ไปที่ `/health/ready`
+- [x] `start_period` ให้เวลาพอสำหรับตอน container เพิ่งบูต

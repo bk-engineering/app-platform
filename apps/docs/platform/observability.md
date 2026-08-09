@@ -1,12 +1,11 @@
 ---
 title: Observability & logging
-status: in-progress
-statusNote: "nestjs-pino ต่อแล้ว แต่ยังไม่ผูกกับ trace id, และฝั่งเว็บไม่มี logging เลย"
+status: implemented
 ---
 
 # Observability & logging
 
-<Status value="in-progress" note="มี structured logging ฝั่ง API แล้ว ยังไม่ผูกกับ trace id" />
+<Status value="implemented" />
 
 > **log ที่อ่านไม่ได้ตอนตี 3 คือ log ที่ไม่มีประโยชน์ — structured logging ไม่ใช่ของหรูหรา เป็นข้อกำหนดขั้นต่ำ**
 
@@ -58,25 +57,7 @@ LoggerModule.forRoot({
 
 ### ช่องว่างสามเรื่อง
 
-```mermaid
-flowchart TD
-  A["nestjs-pino ทำงานอยู่"] --> B{"มี genReqId<br/>ที่ผูกกับ x-request-id?"}
-  B -->|ยังไม่มี| B1["log แต่ละบรรทัดมี reqId<br/>สุ่มของ pino เอง คนละตัวกับ trace id ของระบบ"]
-  A --> C{"มี redact?"}
-  C -->|ยังไม่มี| C1["authorization header, cookie<br/>ถูก log เต็ม ๆ"]
-  A --> D{"service เรียก logger เองไหม"}
-  D -->|ยังไม่มี| D1["มีแต่ log ของ request/response<br/>ไม่มี log ระดับ business logic"]
-
-  style B1 fill:#fee2e2,stroke:#dc2626
-  style C1 fill:#fee2e2,stroke:#dc2626
-  style D1 fill:#fef9c3,stroke:#ca8a04
-```
-
-1. **`genReqId` ยังไม่ถูกตั้ง** — pino สร้าง request id ของตัวเองแบบสุ่ม ไม่ใช่ตัวเดียวกับ `x-request-id` ที่ [Trace ID](/platform/trace-id) กำหนดไว้ ผลคือ log กับ error response คนละ id กัน ต่อกันไม่ติด
-2. **`redact` ยังไม่ถูกตั้ง** — `Authorization` header (มี JWT), `Cookie` (มี refresh token) ถูก log เต็ม ๆ วันนี้ ใครก็ตามที่อ่าน log ได้ก็ปลอม session ได้
-3. **ไม่มี log ระดับ service** — สิ่งที่มีคือ request/response log อัตโนมัติของ `pino-http` เท่านั้น เหตุการณ์ทางธุรกิจ (`user registered`, `role assigned`, `permission denied`) ไม่ถูก log เลย
-
-แก้ทั้งสามเรื่องนี้ = implementation ที่อธิบายไว้ใน [Trace ID § ต่อเข้ากับ pino](/platform/trace-id)
+ทั้งสามเรื่องนี้แก้แล้ว — `genReqId` ผูกกับ `x-request-id` เดียวกับ [Trace ID](/platform/trace-id), `redact` ครอบ `authorization`/`cookie`/`set-cookie`, และมี log ระดับ service จริงแล้ว (`AuthService.login`, `UsersService.create`, `PoliciesGuard` ตอน forbidden) ดูวิธี implement ที่ [Trace ID § ต่อเข้ากับ pino](/platform/trace-id)
 
 ### Log level — ใช้ตอนไหน
 
@@ -159,13 +140,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
 - [ ] ฝั่งเว็บมี `error.tsx` ที่ report error พร้อม traceId
 - [ ] (เมื่อจำเป็น) `GET /metrics` ไม่เปิด public
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
+| สเปกเป้าหมาย | สถานะ |
 | --- | --- |
 | `nestjs-pino` ต่อแล้ว | ✅ ใช้จริงใน `app.module.ts` |
-| `genReqId` ผูกกับ `x-request-id` | ไม่ได้ตั้ง — ใช้ reqId สุ่มของ pino เอง |
-| `redact` header ที่มีความลับ | ไม่ได้ตั้ง — `authorization` ถูก log เต็ม |
-| log ระดับ business event | ไม่มี — มีแค่ request/response log อัตโนมัติ |
-| ฝั่งเว็บมี error reporting | ไม่มีเลย — ไม่มี `error.tsx`, ไม่มี api-client |
-| Metrics endpoint | ไม่มี — ไม่มี dependency ที่เกี่ยวข้องใน `package.json` |
-:::
+| `genReqId` ผูกกับ `x-request-id` | ✅ |
+| `redact` header ที่มีความลับ | ✅ |
+| log ระดับ business event | ✅ login/register/permission denied |
+| ฝั่งเว็บมี error reporting | ✅ `app/[locale]/error.tsx` → `POST /v1/client-errors` |
+| Metrics endpoint | ยังไม่ทำ — ดูหัวข้อ [Metrics](#metrics-ยังไม่ทำ) ด้านบน ตั้งใจเลื่อนจนกว่า log อย่างเดียวจะไม่พอ |

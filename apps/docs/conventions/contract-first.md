@@ -1,12 +1,11 @@
 ---
 title: Contract-first workflow
-status: in-progress
-statusNote: apps/api ใช้ contracts แล้ว แต่ apps/web ยังไม่ได้ใช้
+status: implemented
 ---
 
 # Contract-first workflow
 
-<Status value="in-progress" note="api ใช้แล้ว · web ยังไม่ได้ใช้" />
+<Status value="implemented" />
 
 กฎข้อเดียวของหน้านี้:
 
@@ -116,7 +115,7 @@ app.useGlobalPipes(new ZodValidationPipe());
 
 ## ฝั่ง Web ใช้ยังไง
 
-<Status value="planned" inline />
+<Status value="implemented" inline /> (`apps/web/src/lib/api-client.ts` export ชื่อ `request()` ไม่ใช่ `apiFetch` ตามตัวอย่างด้านล่าง — ฟังก์ชันเดียวกัน)
 
 ### validate ฟอร์ม
 
@@ -241,11 +240,6 @@ compiler ไล่ให้เองว่าต้องแก้ตรงไ�
 - `apps/api` compile ผ่าน `nest build` ซึ่งดึง source ของ workspace เข้ามาให้
 - ห้ามใส่ของที่รันได้เฉพาะ Node หรือเฉพาะเบราว์เซอร์ใน contracts เด็ดขาด — ต้องรันได้ทั้งสองที่ **มีได้แค่ zod schema กับ type ล้วน ๆ**
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| `apps/web` import schema จาก contracts | ประกาศ dependency ไว้แล้วแต่ **ไม่มีไฟล์ไหน import เลย** |
-| ทุก response ถูก `.parse()` ที่ขอบ | ยังไม่มี `lib/api-client.ts` |
-| `UpdateUserSchema` และ `paginatedSchema` มีคนใช้ | นิยามไว้แล้วแต่ไม่มี endpoint หรือหน้าไหนใช้ |
-| มี schema ของ signup / reset password / ability | ยังไม่มี — ดู [สมัครสมาชิก](/auth/signup), [ลืมรหัสผ่าน](/auth/forgot-password), [CASL](/auth/casl) |
+::: tip signup / reset password schema ยังไม่มี — ตั้งใจ
+`packages/contracts` ยังไม่มี schema ของ signup กับ reset password เพราะฟีเจอร์นั้นเองยังไม่ถูก implement — เป็นขอบเขตของ [สมัครสมาชิก](/auth/signup) และ [ลืมรหัสผ่าน](/auth/forgot-password) (ยัง planned แยกต่างหาก) ไม่ใช่ช่องว่างของ pattern contract-first เอง — `UserSchema`, `CreateUserSchema`, `UpdateUserSchema`, `paginatedSchema`, `AbilityRulesSchema` ทุกตัวมีคนใช้จริงแล้วทั้งสองฝั่ง
 :::

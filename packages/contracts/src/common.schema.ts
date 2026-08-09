@@ -14,3 +14,12 @@ export function paginatedSchema<T extends z.ZodTypeAny>(itemSchema: T) {
     limit: z.number().int().min(1),
   });
 }
+
+export const ClientErrorSchema = z.object({
+  message: z.string().min(1).max(2000),
+  stack: z.string().max(8000).optional(),
+  url: z.string().max(2000),
+  userAgent: z.string().max(500).optional(),
+  traceId: z.string().optional(),
+});
+export type ClientError = z.infer<typeof ClientErrorSchema>;

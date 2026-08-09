@@ -1,12 +1,11 @@
 ---
 title: ข้อตกลงของ API
-status: in-progress
-statusNote: ไม่มี /v1 prefix และยังไม่มี endpoint ไหนใช้ pagination
+status: implemented
 ---
 
 # ข้อตกลงของ API
 
-<Status value="in-progress" />
+<Status value="implemented" />
 
 กฎที่ทุก endpoint ต้องทำตาม เพื่อให้ client เดาพฤติกรรมได้โดยไม่ต้องเปิดเอกสารทีละอัน
 
@@ -259,13 +258,12 @@ server เก็บคู่ `(key, hash ของ body) -> response` ไว้ 
 - [ ] error ที่โยนอยู่ใน [catalog](/reference/error-codes)
 - [ ] อัปเดตเอกสารหน้าที่เกี่ยวข้อง
 
-::: warning สถานะโค้ดปัจจุบัน
-| สเปกเป้าหมาย | โค้ดวันนี้ |
-| --- | --- |
-| ทุก route อยู่ใต้ `/v1` | ไม่มี `setGlobalPrefix` — route คือ `/auth/token`, `/users` |
-| endpoint แบบรายการใช้ pagination | ไม่มี endpoint แบบรายการเลย `paginatedSchema` ไม่มีใครใช้ |
-| มี sort/filter grammar | ยังไม่มี |
-| `POST /users` ต้องมี guard | **เป็น public** ใครก็สร้างบัญชีได้ |
-| `401` มี `WWW-Authenticate` | ยังไม่มี |
-| รองรับ `accept-language` | ยังไม่มี — ข้อความเป็นอังกฤษล้วน |
+ทุก route อยู่ใต้ `app.setGlobalPrefix("v1", { exclude: ["health", "health/(.*)"] })`, `GET /v1/users` ใช้ `PaginationQuerySchema` + `paginatedSchema` จริงแล้ว (`apps/api/src/users/users.controller.ts`), `POST /v1/users` มี guard (ต้อง login + สิทธิ์ `create User`) ไม่ใช่ endpoint สมัครสมาชิกสาธารณะ, และทุก `401` มี header `WWW-Authenticate` ติดมาด้วย (`AllExceptionsFilter`)
+
+::: tip `accept-language` (แปล error message เป็นไทย/อังกฤษตาม request) — ตั้งใจเลื่อนไว้ก่อน
+ตอนนี้ error message เป็นภาษาอังกฤษล้วน ยังไม่ได้ต่อกับ [error catalog](/reference/error-codes) เพราะต้องแปลทุก error code — เป็นงานแยกที่ยังไม่ได้ทำ ไม่ผูกกับ convention อื่นในหน้านี้
+:::
+
+::: tip sort/filter grammar ยังไม่มี endpoint ไหนต้องใช้จริง
+`parseSort()`/allowlist pattern ในหน้านี้เป็นแพทเทิร์นสำหรับตอนที่มี endpoint ที่ต้องการมัน — `GET /v1/users` วันนี้ยังไม่ต้อง sort/filter ซับซ้อนขนาดนั้น
 :::
