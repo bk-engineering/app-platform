@@ -8,6 +8,7 @@ volumes:
   postgres-data:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 services:
   postgres:
@@ -162,3 +163,29 @@ services:
       - traefik.http.routers.grafana.rule=Host(`grafana.localhost`)
       - traefik.http.routers.grafana.entrypoints=web
       - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+    # macOS: this reports the Docker Desktop Linux VM, not the physical host — still useful as a demo target
+    volumes:
+      - /:/host:ro
+    networks:
+      - app-platform
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./infra/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - node-exporter
+    networks:
+      - app-platform
