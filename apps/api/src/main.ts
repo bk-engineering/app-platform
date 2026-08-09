@@ -39,7 +39,7 @@ async function bootstrap() {
   });
 
   // business API routes only — /health and Swagger stay unversioned
-  app.setGlobalPrefix("v1", { exclude: ["health", "health/(.*)"] });
+  app.setGlobalPrefix("v1", { exclude: ["health", "health/*path"] });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle("app-platform API")
