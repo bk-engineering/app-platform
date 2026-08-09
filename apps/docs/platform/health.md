@@ -141,7 +141,7 @@ Docker Compose / Kubernetes healthcheck ตัดสินจาก HTTP status 
 services:
   api:
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000/health/ready"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
       timeout: 3s
       retries: 3
