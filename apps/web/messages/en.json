@@ -1,6 +1,18 @@
 {
   "HomePage": {
     "title": "app-platform",
-    "subtitle": "Next.js + NestJS + shared zod contracts, running in Docker with hot reload."
+    "subtitle": "Next.js + NestJS + shared zod contracts, running in Docker with hot reload.",
+    "loggedInAs": "Logged in as {email}",
+    "logOut": "Log out",
+    "logIn": "Log in"
+  },
+  "LoginPage": {
+    "title": "Log in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in…",
+    "invalidCredentials": "Invalid email or password.",
+    "genericError": "Something went wrong. Please try again."
   }
 }

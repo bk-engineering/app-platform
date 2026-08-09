@@ -1,12 +1,11 @@
 ---
 title: Request lifecycle
-status: in-progress
-statusNote: the Nest pipeline (middleware → guard → pipe → filter) is real now — interceptors and the client side are still missing
+status: implemented
 ---
 
 # Request lifecycle
 
-<Status value="in-progress" note="the Nest pipeline is real now — interceptors and the client side are still missing" />
+<Status value="implemented" />
 
 Follow one request from click to pixel, on both the happy and the failure path. This is where [contracts](/en/conventions/contract-first), the [error envelope](/en/conventions/errors), and the [trace id](/en/platform/trace-id) meet.
 
@@ -182,13 +181,17 @@ A service must never import `Request`, `Response`, or `HttpStatus` directly. Thr
 The single exception is the `Errors.*` helper, which pins `HttpStatus` at construction time — centralised in one file rather than scattered through services.
 :::
 
-::: warning Current code status
+::: tip Current code status
 | Layer | Code today |
 | --- | --- |
 | Middleware | `TraceIdMiddleware` is real, covers every route ✅ |
 | Guards | `JwtAuthGuard` + `PoliciesGuard` are both global (`APP_GUARD`) with `@Public()` support ✅ |
-| Interceptors | none yet (timing/cache) |
+| Interceptors | global `TimingInterceptor` (`APP_INTERCEPTOR`) times and logs every request ✅ |
 | Pipes | global `ZodValidationPipe` ✅ |
 | Filters | `AllExceptionsFilter`, global ✅ |
-| Client side | no `api-client`, no refresh interceptor; `providers.tsx` has a bare `QueryClient` — out of scope for this round, tied to [ADR-0006](/en/adr/0006-token-storage-httponly-cookie) |
+| Client side | `api-client` (`apps/web/src/lib/api-client.ts`) attaches a trace id and Bearer token, parses the response with zod, throws `ApiError`, and does a single-flight refresh on 401 ✅ · a login page and `sessionStorage`-backed session store exist ✅ |
+:::
+
+::: info Still illustrative, not literal
+The `/v1/...` paths, the Server Component prefetch, and the session-cookie check in `proxy.ts` in the diagrams above are a stand-in for the general pattern, not routes that exist today — the real endpoints are `/auth/token`, `/auth/me`, `/users` (no `/v1` prefix, no list endpoint yet). The client also still attaches the token via a plain `Authorization` header rather than the httpOnly cookie flow in [ADR-0006](/en/adr/0006-token-storage-httponly-cookie), which is still "planned".
 :::

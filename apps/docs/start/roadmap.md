@@ -24,7 +24,7 @@ status: implemented
 | [ภาพรวมระบบ](/architecture/overview) | <Status value="implemented" inline /> | |
 | [Container & routing](/architecture/containers) | <Status value="implemented" inline /> | ยังไม่มี compose/Dockerfile สำหรับ production |
 | [Tech stack & เหตุผล](/architecture/tech-stack) | <Status value="implemented" inline /> | |
-| [วงจรชีวิตของ request](/architecture/request-lifecycle) | <Status value="in-progress" inline /> | pipeline ฝั่ง Nest ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client |
+| [วงจรชีวิตของ request](/architecture/request-lifecycle) | <Status value="implemented" inline /> | |
 | [Data model](/architecture/data-model) | <Status value="implemented" inline /> | 8 model + seed จริงแล้ว |
 
 ### ข้อตกลง & ข้ามระบบ

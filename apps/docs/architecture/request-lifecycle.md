@@ -1,12 +1,11 @@
 ---
 title: วงจรชีวิตของ request
-status: in-progress
-statusNote: pipeline ฝั่ง Nest (middleware → guard → pipe → filter) ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client
+status: implemented
 ---
 
 # วงจรชีวิตของ request
 
-<Status value="in-progress" note="pipeline ฝั่ง Nest ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client" />
+<Status value="implemented" />
 
 ตาม request หนึ่งอันตั้งแต่คลิกจนถึงพิกเซล ทั้งตอนสำเร็จและตอนพัง หน้านี้คือที่ที่ [contract](/conventions/contract-first), [error envelope](/conventions/errors) และ [trace id](/platform/trace-id) มาบรรจบกัน
 
@@ -182,13 +181,17 @@ service ห้าม import `Request`, `Response` หรือ `HttpStatus` ต�
 ข้อยกเว้นเดียวคือ helper `Errors.*` ที่ระบุ `HttpStatus` ไว้ตอนสร้าง เพราะรวมศูนย์ไว้ที่เดียว ไม่กระจายไปทั่ว service
 :::
 
-::: warning สถานะโค้ดปัจจุบัน
+::: tip สถานะโค้ดปัจจุบัน
 | ชั้น | โค้ดวันนี้ |
 | --- | --- |
 | Middleware | `TraceIdMiddleware` ทำงานจริง ครอบทุก route ✅ |
 | Guards | `JwtAuthGuard` + `PoliciesGuard` เป็น global guard ทั้งคู่ (`APP_GUARD`) พร้อม `@Public()` ✅ |
-| Interceptors | ยังไม่มี (จับเวลา/cache) |
+| Interceptors | `TimingInterceptor` แบบ global (`APP_INTERCEPTOR`) จับเวลาและ log ทุก request ✅ |
 | Pipes | มี `ZodValidationPipe` แบบ global ✅ |
 | Filters | `AllExceptionsFilter` แบบ global ✅ |
-| ฝั่ง client | ไม่มี `api-client` ไม่มี refresh interceptor `providers.tsx` มี `QueryClient` เปล่า ๆ — นอกขอบเขตของรอบนี้ ผูกกับ [ADR-0006](/adr/0006-token-storage-httponly-cookie) |
+| ฝั่ง client | `api-client` (`apps/web/src/lib/api-client.ts`) ใส่ trace id, แนบ Bearer token, parse response ด้วย zod, โยน `ApiError`, refresh แบบ single-flight เมื่อเจอ 401 ✅ · มีหน้า login และ session store (`sessionStorage`) แล้ว ✅ |
+:::
+
+::: info ยังเป็นภาพประกอบ ไม่ใช่ของจริง
+เส้นทาง `/v1/...`, การ prefetch จาก Server Component, และการเช็ค session cookie ใน `proxy.ts` ใน diagram ข้างบนคือตัวอย่างประกอบภาพรวมของ pattern ไม่ใช่ route ที่มีอยู่จริงตอนนี้ — endpoint จริงคือ `/auth/token`, `/auth/me`, `/users` (ไม่มี prefix `/v1`, ยังไม่มี list endpoint) และฝั่ง client ยังใช้ Bearer token ผ่าน `Authorization` header ตรง ๆ ไม่ได้ย้ายไป httpOnly cookie ตาม [ADR-0006](/adr/0006-token-storage-httponly-cookie) ซึ่งยังมีสถานะ "planned"
 :::

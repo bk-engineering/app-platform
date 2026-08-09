@@ -1,10 +1,11 @@
 import { Body, Controller, Get, Post, Req } from "@nestjs/common";
-import { ApiBearerAuth, ApiConsumes, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
+import { ApiErrorResponses } from "../common/decorators/api-error-responses.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import type { AuthenticatedRequest } from "../common/types/authenticated-request";
 import { AuthService } from "./auth.service";
-import { TokenRequestDto } from "./dto/token-request.dto";
+import { TokenRequestDto, TokenResponseDto } from "./dto/token-request.dto";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -13,6 +14,8 @@ export class AuthController {
 
   @Public()
   @ApiConsumes("application/x-www-form-urlencoded")
+  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiErrorResponses()
   @Post("token")
   token(@Body() body: TokenRequestDto, @Req() req: Request) {
     const meta = { userAgent: req.headers["user-agent"], ip: req.ip };
@@ -25,6 +28,7 @@ export class AuthController {
 
   @ApiBearerAuth("access-token")
   @ApiSecurity("oauth2")
+  @ApiErrorResponses()
   @Get("me")
   me(@Req() req: AuthenticatedRequest) {
     return {

@@ -24,7 +24,7 @@ Badge meanings live at [Status legend](/en/reference/status-legend).
 | [System overview](/en/architecture/overview) | <Status value="implemented" inline /> | |
 | [Containers & routing](/en/architecture/containers) | <Status value="implemented" inline /> | no production compose or Dockerfile yet |
 | [Tech stack & rationale](/en/architecture/tech-stack) | <Status value="implemented" inline /> | |
-| [Request lifecycle](/en/architecture/request-lifecycle) | <Status value="in-progress" inline /> | the Nest pipeline is real now — interceptors and the client side are still missing |
+| [Request lifecycle](/en/architecture/request-lifecycle) | <Status value="implemented" inline /> | |
 | [Data model](/en/architecture/data-model) | <Status value="implemented" inline /> | 8 models + real seed data |
 
 ### Conventions & cross-cutting

@@ -1,6 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_FILTER } from "@nestjs/core";
+import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { LoggerModule } from "nestjs-pino";
 import { v7 as uuidv7 } from "uuid";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -10,6 +10,7 @@ import { HealthController } from "./health.controller";
 import { TraceIdMiddleware } from "./common/trace/trace-id.middleware";
 import { getTraceId, getUserId } from "./common/trace/trace-context";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import { TimingInterceptor } from "./common/interceptors/timing.interceptor";
 
 @Module({
   imports: [
@@ -39,7 +40,10 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     UsersModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+  providers: [
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_INTERCEPTOR, useClass: TimingInterceptor },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
