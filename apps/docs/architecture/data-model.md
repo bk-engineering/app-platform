@@ -1,12 +1,12 @@
 ---
 title: Data model
-status: planned
-statusNote: schema.prisma มีแค่ model User
+status: implemented
+statusNote: schema.prisma มีครบ 8 model แล้ว seed สร้าง RBAC data จริง — เหลือแค่ Account/VerificationToken/File/AuditLog ที่ยังไม่มีโค้ดฝั่งไหนเขียนลงตารางเหล่านี้
 ---
 
 # Data model
 
-<Status value="planned" note="ตอนนี้มีแค่ model User" />
+<Status value="implemented" note="8 model + seed จริงแล้ว — Account/VerificationToken/File/AuditLog ยังไม่มีโค้ดเขียนเข้า" />
 
 `apps/api/prisma/schema.prisma` เป็นแหล่งความจริงของโครงสร้างฐานข้อมูล หน้านี้คือรูปที่ควรจะเป็นเมื่อ [auth](/auth/overview) และ [RBAC](/auth/rbac-model) ถูก implement ครบ
 
@@ -74,6 +74,7 @@ erDiagram
 
   Permission {
     uuid id PK
+    text key UK "e.g. read:User:own"
     text action "manage|create|read|update|delete"
     text subject "User|Role|all"
     jsonb conditions
@@ -255,7 +256,9 @@ model Role {
 }
 
 model Permission {
-  id      String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  /// stable idempotency key for seeding, e.g. "read:User:own" — see the tip below
+  key     String @unique @db.VarChar(80)
   /// action ของ CASL: manage | create | read | update | delete
   action  String @db.VarChar(32)
   /// subject ของ CASL: User | Role | all
@@ -267,9 +270,13 @@ model Permission {
 
   roles RolePermission[]
 
-  @@unique([action, subject])
+  @@index([action, subject])
   @@map("permissions")
 }
+
+::: tip ทำไมเป็น `key` ไม่ใช่ `@@unique([action, subject])`
+ตารางสิทธิ์ต้องการสองแถวที่ action+subject เดียวกันแต่ conditions ต่างกัน เช่น `read User` แบบไม่จำกัด (manager) กับ `read User` แบบจำกัดแค่ตัวเอง (member) — `@@unique([action, subject])` ตามที่ร่างไว้ตอนแรกบล็อกกรณีนี้ จึงเปลี่ยนมาใช้ `key` เป็น slug ที่ตั้งเองตอน seed (เช่น `"read:User:own"`) เป็น idempotency key แทน ดู [RBAC](/auth/rbac-model) และ `apps/api/prisma/seed.ts` ตัวจริง
+:::
 
 model UserRole {
   userId String @map("user_id") @db.Uuid
@@ -392,9 +399,10 @@ seeder ต้อง **idempotent** — ใช้ `upsert` ทั้งหมด 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| 8 model + 2 join table | **มีแค่ `User`** (id, email, displayName, passwordHash, createdAt, updatedAt) |
-| อีเมลเป็น `citext` | เป็น `text` ธรรมดา — `A@b.com` กับ `a@b.com` สร้างได้สองบัญชี |
-| ตั้งชื่อคอลัมน์เป็น snake_case | ไม่มี `@map` เลย คอลัมน์เป็น `displayName`, `passwordHash` |
-| soft delete | ไม่มี `deletedAt` |
-| seed สร้าง role/permission | `seed.ts` upsert ผู้ใช้เดียว ไม่มี guard เรื่อง `NODE_ENV` |
+| 8 model + 2 join table | ครบ ✅ (ดู `key` แทน `@@unique([action, subject])` ใน `Permission` — ทิปด้านบน) |
+| อีเมลเป็น `citext` | ✅ |
+| ตั้งชื่อคอลัมน์เป็น snake_case | ✅ |
+| soft delete บน `User` | ✅ (`deletedAt`) |
+| seed สร้าง role/permission | ✅ permission matrix เต็มตาม [RBAC](/auth/rbac-model), idempotent, มี guard `NODE_ENV` |
+| `Account`, `VerificationToken`, `File`, `AuditLog` มีโค้ดใช้งานจริง | ยังไม่มี — ตารางมีอยู่ในสคีมาแล้ว แต่ยังไม่มี endpoint ไหนเขียนหรืออ่านจากตารางเหล่านี้ (Google OAuth, ยืนยันอีเมล, อัปโหลดไฟล์, audit log ยังไม่ implement) |
 :::

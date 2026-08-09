@@ -1,11 +1,12 @@
 ---
 title: Role & permission model
-status: planned
+status: implemented
+statusNote: tables + seed are real now
 ---
 
 # Role & permission model
 
-<Status value="planned" />
+<Status value="implemented" />
 
 The data model for permissions. The engine that enforces them is at [CASL](/en/auth/casl).
 
@@ -111,15 +112,17 @@ can("update", "User", ["displayName", "email", "status"], { id: { $ne: user.id }
 
 One `Permission` row is exactly one CASL rule.
 
-| `action` | `subject` | `conditions` | `fields` |
-| --- | --- | --- | --- |
-| `manage` | `all` | `null` | `{}` |
-| `read` | `User` | `null` | `{}` |
-| `update` | `User` | `{"id": {"$ne": "${user.id}"}}` | `{displayName,email,status}` |
-| `read` | `User` | `{"id": "${user.id}"}` | `{}` |
-| `update` | `User` | `{"id": "${user.id}"}` | `{displayName,avatarFileId,locale,theme}` |
+| `key` | `action` | `subject` | `conditions` | `fields` |
+| --- | --- | --- | --- | --- |
+| `manage:all` | `manage` | `all` | `null` | `{}` |
+| `read:User:any` | `read` | `User` | `null` | `{}` |
+| `update:User:any` | `update` | `User` | `{"id": {"$ne": "${user.id}"}}` | `{displayName,email,status}` |
+| `read:User:own` | `read` | `User` | `{"id": "${user.id}"}` | `{}` |
+| `update:User:own` | `update` | `User` | `{"id": "${user.id}"}` | `{displayName,avatarFileId,locale,theme}` |
 
 `${user.id}` is a placeholder substituted when the ability is built for the signed-in user — which is how rules stay data rather than being tied to one person. See [CASL](/en/auth/casl).
+
+`key` is a slug set at seed time, used instead of `@@unique([action, subject])` — `read User` needs two rows with different conditions (`any` vs. `own`). See [Data model](/en/architecture/data-model).
 
 ::: warning `conditions` comes from the database and must be validated
 `conditions` is a `Json` column fed into a permission evaluator — anyone who can edit those rows can write arbitrary rules. So: (a) only `admin` may modify `Permission`, (b) validate `conditions` with zod before constructing an ability, (c) allow only the operators you need (`$eq`, `$ne`, `$in`, `$nin`), not all of MongoQuery.
@@ -129,7 +132,7 @@ One `Permission` row is exactly one CASL rule.
 
 ```mermaid
 flowchart TD
-  P["1 · upsert every Permission<br/>(action, subject) is the unique key"]
+  P["1 · upsert every Permission<br/>key is the unique key"]
   P --> R["2 · upsert Roles<br/>admin · manager · member (isSystem)"]
   R --> RP["3 · link RolePermission<br/>from the matrix"]
   RP --> A["4 · upsert the first admin<br/>SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD"]
@@ -181,9 +184,10 @@ Roles with `isSystem = false` can be created, edited, and deleted through settin
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `Role`, `Permission`, `UserRole`, `RolePermission` tables | **None of them** — `schema.prisma` has only `User` |
-| Seeded roles and permissions | `seed.ts` upserts one user |
-| A "must keep one admin" check | Doesn't exist |
-| Field-level restrictions | There's no permission system at all |
-| Demo data gated from production | No `NODE_ENV` guard — `demo@example.com` would be created anywhere |
+| `Role`, `Permission`, `UserRole`, `RolePermission` tables | ✅ all of them (see the unique-key change to `key` in [Data model](/en/architecture/data-model)) |
+| Seeded roles and permissions | ✅ the full matrix above, idempotent |
+| A "must keep one admin" check (`USER_LAST_ADMIN`) | Doesn't exist yet — no endpoint removes a role or deactivates an account |
+| Field-level restrictions | Each permission row already stores `fields` per the matrix, but there's no endpoint that edits a user (`PATCH /users/:id`) to exercise it |
+| Demo data gated from production | ✅ `if (process.env.NODE_ENV !== "production")` in `seed.ts` |
+| Administrators creating roles from the UI | Not yet — that's `apps/web` work, out of scope this round |
 :::

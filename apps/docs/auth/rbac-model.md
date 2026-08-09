@@ -1,11 +1,12 @@
 ---
 title: Role & permission model
-status: planned
+status: implemented
+statusNote: ตาราง + seed ทำงานจริงแล้ว
 ---
 
 # Role & permission model
 
-<Status value="planned" />
+<Status value="implemented" />
 
 โมเดลข้อมูลของสิทธิ์ ส่วนกลไกที่บังคับใช้จริงอยู่ที่ [CASL](/auth/casl)
 
@@ -111,15 +112,17 @@ can("update", "User", ["displayName", "email", "status"], { id: { $ne: user.id }
 
 `Permission` หนึ่งแถวคือกฎ CASL หนึ่งข้อพอดี
 
-| `action` | `subject` | `conditions` | `fields` |
-| --- | --- | --- | --- |
-| `manage` | `all` | `null` | `{}` |
-| `read` | `User` | `null` | `{}` |
-| `update` | `User` | `{"id": {"$ne": "${user.id}"}}` | `{displayName,email,status}` |
-| `read` | `User` | `{"id": "${user.id}"}` | `{}` |
-| `update` | `User` | `{"id": "${user.id}"}` | `{displayName,avatarFileId,locale,theme}` |
+| `key` | `action` | `subject` | `conditions` | `fields` |
+| --- | --- | --- | --- | --- |
+| `manage:all` | `manage` | `all` | `null` | `{}` |
+| `read:User:any` | `read` | `User` | `null` | `{}` |
+| `update:User:any` | `update` | `User` | `{"id": {"$ne": "${user.id}"}}` | `{displayName,email,status}` |
+| `read:User:own` | `read` | `User` | `{"id": "${user.id}"}` | `{}` |
+| `update:User:own` | `update` | `User` | `{"id": "${user.id}"}` | `{displayName,avatarFileId,locale,theme}` |
 
 `${user.id}` เป็น placeholder ที่ถูกแทนตอนสร้าง ability จากผู้ใช้ที่ล็อกอินอยู่ — เก็บกฎเป็นข้อมูลได้โดยไม่ต้องผูกกับ user คนใดคนหนึ่ง ดู [CASL](/auth/casl)
+
+`key` คือ slug ที่ตั้งเองตอน seed ใช้แทน `@@unique([action, subject])` เพราะ `read User` ต้องมีสองแถวที่ conditions ต่างกัน (`any` vs `own`) ดู [Data model](/architecture/data-model)
 
 ::: warning `conditions` มาจากฐานข้อมูล ต้องตรวจก่อนใช้
 `conditions` เป็น `Json` ที่ถูกป้อนเข้าเครื่องมือประเมินสิทธิ์ — ถ้าใครแก้แถวใน DB ได้ ก็เขียนกฎอะไรก็ได้ ให้ (ก) แก้ `Permission` ได้เฉพาะ `admin` (ข) ตรวจ `conditions` ด้วย zod ก่อนสร้าง ability (ค) อนุญาต operator เท่าที่จำเป็น (`$eq`, `$ne`, `$in`, `$nin`) ไม่เปิด MongoQuery ทั้งชุด
@@ -129,7 +132,7 @@ can("update", "User", ["displayName", "email", "status"], { id: { $ne: user.id }
 
 ```mermaid
 flowchart TD
-  P["1 · upsert Permission ทุกแถว<br/>(action, subject) เป็น unique key"]
+  P["1 · upsert Permission ทุกแถว<br/>key เป็น unique key"]
   P --> R["2 · upsert Role<br/>admin · manager · member (isSystem)"]
   R --> RP["3 · เชื่อม RolePermission<br/>ตามตารางสิทธิ์"]
   RP --> A["4 · upsert ผู้ดูแลคนแรก<br/>SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD"]
@@ -181,9 +184,10 @@ seeder ต้อง **idempotent** — ใช้ `upsert` ทั้งหมด 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| ตาราง `Role` `Permission` `UserRole` `RolePermission` | ไม่มีสักตาราง — `schema.prisma` มีแค่ `User` |
-| seed role และ permission | `seed.ts` upsert ผู้ใช้เดียว |
-| ตรวจ "ต้องเหลือผู้ดูแล" | ไม่มี |
-| จำกัดสิทธิ์ระดับ field | ไม่มีระบบสิทธิ์เลย |
-| ข้อมูลตัวอย่างถูกกันจาก production | ไม่มี guard `NODE_ENV` — `demo@example.com` จะถูกสร้างทุกที่ |
+| ตาราง `Role` `Permission` `UserRole` `RolePermission` | ✅ ครบ (ดูการเปลี่ยน unique key เป็น `key` ใน [Data model](/architecture/data-model)) |
+| seed role และ permission | ✅ permission matrix เต็มตามตารางสิทธิ์ด้านบน, idempotent |
+| ตรวจ "ต้องเหลือผู้ดูแล" (`USER_LAST_ADMIN`) | ยังไม่มี — ยังไม่มี endpoint ที่ถอด role หรือปิดบัญชีได้ |
+| จำกัดสิทธิ์ระดับ field | permission row มี `fields` ครบตามตาราง แต่ยังไม่มี endpoint แก้ user (`PATCH /users/:id`) ให้พิสูจน์จริง |
+| ข้อมูลตัวอย่างถูกกันจาก production | ✅ `if (process.env.NODE_ENV !== "production")` ใน `seed.ts` |
+| ผู้ดูแลสร้าง role ใหม่จาก UI | ยังไม่มี — เป็นของ `apps/web` นอกขอบเขตรอบนี้ |
 :::

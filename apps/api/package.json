@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@app-platform/contracts": "workspace:*",
+    "@casl/ability": "^7.0.1",
+    "@casl/prisma": "^2.0.2",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.28",
@@ -33,6 +35,7 @@
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "uuid": "^14.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

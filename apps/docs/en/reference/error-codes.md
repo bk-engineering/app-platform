@@ -1,12 +1,12 @@
 ---
 title: Error code catalog
-status: planned
-statusNote: no error envelope exists in the code yet
+status: in-progress
+statusNote: the error envelope is real now, but only 6 codes from this catalog have an actual throw site
 ---
 
 # Error code catalog
 
-<Status value="planned" />
+<Status value="in-progress" note="only part of this catalog has real throw sites — see the table at the bottom" />
 
 Every `code` that can appear in an [error envelope](/en/conventions/errors) must be in this table. If it isn't, that's a bug.
 
@@ -138,5 +138,5 @@ If confirming the resource exists is itself a leak, use `RESOURCE_NOT_FOUND` —
 6. If the client needs special behaviour, write it in the "Client should" column
 
 ::: warning Current code status
-None of these codes are implemented yet. The API returns Nest's default shape (`{ statusCode, message, error }`). This table is the spec that [Error envelope](/en/conventions/errors) will fulfil.
+The [error envelope](/en/conventions/errors) is real now, but the `Errors` helper (`apps/api/src/common/errors/app.exception.ts`) only covers the codes with an actual throw site today: `AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_INVALID`, `AUTH_REFRESH_REUSED`, `USER_EMAIL_TAKEN`, `USER_NOT_FOUND`, `AUTHZ_FORBIDDEN` — plus `VALIDATION_FAILED`/`RESOURCE_CONFLICT`/`RESOURCE_NOT_FOUND`/`INTERNAL_ERROR`, which the filter classifies automatically. The rest of this table is spec waiting on endpoints that don't exist yet (signup, email verification, role management, file upload), per the "adding a new code" rule above — add one only once there's a real throw site.
 :::

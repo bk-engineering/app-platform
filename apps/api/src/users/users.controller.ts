@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiSecurity, ApiTags } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { CheckPolicies } from "../auth/ability/policies.guard";
+import type { AuthenticatedRequest } from "../common/types/authenticated-request";
 import { UsersService } from "./users.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 
@@ -9,6 +10,9 @@ import { CreateUserDto } from "./dto/create-user.dto";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiBearerAuth("access-token")
+  @ApiSecurity("oauth2")
+  @CheckPolicies((ability) => ability.can("create", "User"))
   @Post()
   create(@Body() body: CreateUserDto) {
     return this.usersService.create(body);
@@ -16,9 +20,8 @@ export class UsersController {
 
   @ApiBearerAuth("access-token")
   @ApiSecurity("oauth2")
-  @UseGuards(JwtAuthGuard)
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.usersService.findByIdOrThrow(id);
+  findOne(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
+    return this.usersService.findVisible(id, req.ability);
   }
 }

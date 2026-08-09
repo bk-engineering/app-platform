@@ -1,7 +1,7 @@
 ---
 title: API endpoint catalog
 status: in-progress
-statusNote: endpoint จริงมีน้อย ไม่มี /v1 prefix และ POST /users ยังไม่มี guard
+statusNote: endpoint จริงมีน้อย ไม่มี /v1 prefix — แต่ guard/CASL/error envelope ทำงานจริงแล้วในทุก endpoint ที่มี
 ---
 
 # API endpoint catalog
@@ -20,7 +20,8 @@ statusNote: endpoint จริงมีน้อย ไม่มี /v1 prefix �
 
 | Method | Path | Auth | Request body | Response | หมายเหตุ |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/auth/token` | ไม่ต้อง | `application/x-www-form-urlencoded` ตาม `TokenRequestSchema` — `grant_type=password` ต้องมี `username`+`password`, `grant_type=refresh_token` ต้องมี `refresh_token` (validate ด้วย `.refine()`) | `TokenResponseSchema` — `{ access_token, token_type: "bearer", expires_in, refresh_token }` | endpoint เดียวรวม login + refresh ตาม OAuth2 password/refresh_token grant (RFC 6749) เพื่อให้ Swagger UI ใช้ **Authorize → OAuth2 (password)** แล้ว auto-refresh ได้ในตัว โยน `401` ถ้า credentials ผิด, `400` ถ้า field ไม่ครบตาม grant_type — verify แล้ว re-sign ทันที **ไม่มี rotation** — token เดิมยังใช้ซ้ำได้ ดู [JWT & refresh rotation](/auth/tokens) |
+| `POST` | `/auth/token` | ไม่ต้อง (`@Public()`) | `application/x-www-form-urlencoded` ตาม `TokenRequestSchema` — `grant_type=password` ต้องมี `username`+`password`, `grant_type=refresh_token` ต้องมี `refresh_token` (validate ด้วย `.refine()`) | `TokenResponseSchema` — `{ access_token, token_type: "bearer", expires_in, refresh_token }` | endpoint เดียวรวม login + refresh ตาม OAuth2 password/refresh_token grant (RFC 6749) เพื่อให้ Swagger UI ใช้ **Authorize → OAuth2 (password)** แล้ว auto-refresh ได้ในตัว โยน `401 AUTH_INVALID_CREDENTIALS` ถ้า credentials ผิด, `422 VALIDATION_FAILED` ถ้า field ไม่ครบตาม grant_type, `401 AUTH_REFRESH_INVALID`/`AUTH_REFRESH_REUSED` ถ้า refresh token ใช้ไม่ได้ — **rotate จริงทุกครั้ง** พร้อม reuse detection ดู [JWT & refresh rotation](/auth/tokens) |
+| `GET` | `/auth/me` | ต้อง auth | — | `{ user: { id, email }, rules: RawRule[] }` | คืน CASL ability rules ดิบของผู้ใช้ที่ login อยู่ ดู [CASL](/auth/casl) |
 
 ## Users
 
@@ -28,10 +29,10 @@ statusNote: endpoint จริงมีน้อย ไม่มี /v1 prefix �
 
 | Method | Path | Auth | Request body | Response | หมายเหตุ |
 | --- | --- | --- | --- | --- | --- |
-| `POST` | `/users` | **ไม่มี guard เลย** | `CreateUserSchema` — `{ email, displayName, password }` | `UserSchema` (ไม่มี `passwordHash`) | 🚨 ใครก็สร้างบัญชีได้ตอนนี้ — ดู [Roadmap ข้อ 1](/start/roadmap) และ [สมัครสมาชิก](/auth/signup) |
-| `GET` | `/users/:id` | `JwtAuthGuard` + `@ApiBearerAuth()` | — | `UserSchema` (ไม่มี `passwordHash`) | `404` ถ้าไม่พบ id |
+| `POST` | `/users` | ต้อง auth + `@CheckPolicies(can('create','User'))` | `CreateUserSchema` — `{ email, displayName, password }` | `UserSchema` (ไม่มี `passwordHash`) | ตาม [ตารางสิทธิ์](/auth/rbac-model) มีแค่ `manager`/`admin` สร้างได้ — `403 AUTHZ_FORBIDDEN` ถ้าไม่ใช่, `409 USER_EMAIL_TAKEN` ถ้าอีเมลซ้ำ |
+| `GET` | `/users/:id` | ต้อง auth | — | `UserSchema` (ไม่มี `passwordHash`) | ตรวจสิทธิ์ระดับแถวด้วย `ability.can('read', subject('User', user))` — `member` เห็นแค่ตัวเอง คนอื่นได้ `404 USER_NOT_FOUND` (ไม่ใช่ `403` เพื่อไม่ยืนยันว่า id มีอยู่จริง) |
 
-response ของทั้งสอง endpoint ตัด `passwordHash` ออกด้วยฟังก์ชัน `toPublicUser()` ใน `UsersService` ก่อนส่งกลับเสมอ
+response ของทั้งสอง endpoint ตัด `passwordHash` ออกด้วยฟังก์ชัน `toPublicUser()` ใน `UsersService` ก่อนส่งกลับเสมอ ทุก endpoint ที่พังตอบเป็น [error envelope](/conventions/errors) เดียวกันหมด มี `code`/`traceId` เสมอ
 
 ## Health
 
@@ -45,8 +46,8 @@ response ของทั้งสอง endpoint ตัด `passwordHash` ออ
 
 | Guard | ใช้ที่ไหน | ทำอะไร |
 | --- | --- | --- |
-| ไม่มี guard | `POST /auth/token`, `GET /health`, **`POST /users`** | เปิด public ทั้งหมด — สอง endpoint แรกตั้งใจ ตัวสุดท้ายไม่ได้ตั้งใจ |
-| `JwtAuthGuard` | `GET /users/:id` | ต้องมี `Authorization: Bearer <access_token>` ที่ valid — รับได้ทั้ง token ที่ paste ผ่าน Swagger's bearer scheme (`access-token`) หรือ token ที่ Swagger ขอมาให้เองผ่าน oauth2 password flow (`oauth2`) ยังไม่เช็ก [CASL/สิทธิ์](/auth/rbac-model) — เช็กแค่ว่า login อยู่ ไม่เช็กว่าดู user คนอื่นได้ไหม |
+| `@Public()` (ข้าม guard ทั้งคู่) | `POST /auth/token`, `GET /health` | เปิด public ตั้งใจ |
+| `JwtAuthGuard` + `PoliciesGuard` (global ทั้งคู่ผ่าน `APP_GUARD`) | ทุก route ที่เหลือ (`GET /auth/me`, `POST /users`, `GET /users/:id`) | ต้องมี `Authorization: Bearer <access_token>` ที่ valid (bearer scheme `access-token` หรือ oauth2 password flow) แล้วต่อด้วยเช็ก [CASL/สิทธิ์](/auth/rbac-model) จริง — ไม่ใช่แค่เช็กว่า login อยู่ |
 
 ## ที่สเปกต้องการแต่ยังไม่มี endpoint จริง
 
@@ -56,14 +57,15 @@ response ของทั้งสอง endpoint ตัด `passwordHash` ออ
 - `POST /auth/google`, `GET /auth/google/callback` — Google OAuth ([สมัครสมาชิก](/auth/signup))
 - `POST /auth/verify-email`, `POST /auth/resend-verification` ([ยืนยันอีเมล](/auth/email-verification))
 - `POST /auth/forgot-password`, `POST /auth/reset-password` ([ลืมรหัสผ่าน](/auth/forgot-password))
-- `GET /users`, `PATCH /users/:id`, `DELETE /users/:id` — CRUD ที่เหลือของ users ยังไม่มี route
+- `GET /users`, `PATCH /users/:id`, `DELETE /users/:id` — CRUD ที่เหลือของ users ยังไม่มี route (field-level update permission ใน [RBAC](/auth/rbac-model) จึงยังพิสูจน์ไม่ได้จากโค้ดจริง)
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
 | ทุก route ธุรกิจขึ้นต้น `/v1` | ไม่มี prefix เลย |
-| `POST /users` ต้องผ่าน signup flow ที่ตั้งใจ (มี guard หรือ rate limit) | เปิด public 100% |
-| refresh token rotation | `refresh()` แค่ verify แล้ว re-sign |
+| `POST /users` ต้องผ่าน guard ที่ตั้งใจ | ✅ ต้อง auth + `create User` permission (manager ขึ้นไป) |
+| refresh token rotation | ✅ rotate จริงทุกครั้ง พร้อม reuse detection |
+| error ทุกตัวเป็น envelope เดียวกัน | ✅ `AllExceptionsFilter` |
 | CRUD ครบของ `/users` | มีแค่ create กับ read เดี่ยว |
 | response แบบ paginated (`paginatedSchema()`) | ยังไม่มี endpoint ไหนคืนลิสต์เลย |
 :::

@@ -1,12 +1,12 @@
 ---
 title: Error envelope
-status: planned
-statusNote: ยังใช้รูปแบบ error default ของ Nest ไม่มี exception filter
+status: implemented
+statusNote: AllExceptionsFilter ทำงานจริงแล้ว
 ---
 
 # Error envelope
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **error ทุกตัวที่ออกจาก API มีหน้าตาเหมือนกันหมด ไม่มีข้อยกเว้น**
 
@@ -368,9 +368,10 @@ onError(error) {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `AllExceptionsFilter` แบบ global | ไม่มี filter เลย — Nest ตอบรูปแบบ default `{statusCode, message, error}` |
-| `ErrorEnvelopeSchema` ใน contracts | ยังไม่มีไฟล์ `error.schema.ts` |
-| ทุก error มี `traceId` | ยังไม่มี trace id ในระบบ |
-| Prisma error ถูก map | `users.service.ts` ดัก duplicate เองแล้วโยน `ConflictException` ของ Nest |
-| ข้อความ error ถูกแปล | ไม่มี namespace `errors` ใน `messages/{th,en}.json` |
+| `AllExceptionsFilter` แบบ global | ✅ |
+| `ErrorEnvelopeSchema` ใน contracts | ✅ `packages/contracts/src/error.schema.ts` |
+| ทุก error มี `traceId` | ✅ |
+| Prisma error ถูก map | ✅ (P2002 → 409, P2025 → 404) |
+| `Errors` helper ครอบคลุมทั้ง catalog | มีแค่ code ที่มีจุดโยนจริงในโค้ดตอนนี้ (`AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_INVALID`, `AUTH_REFRESH_REUSED`, `USER_EMAIL_TAKEN`, `USER_NOT_FOUND`, `AUTHZ_FORBIDDEN`) — เพิ่มตามที่ [catalog](/reference/error-codes) ต้องการจริง |
+| ข้อความ error ถูกแปล | ไม่มี namespace `errors` ใน `messages/{th,en}.json` — เป็นงานฝั่ง `apps/web` นอกขอบเขตรอบนี้ |
 :::

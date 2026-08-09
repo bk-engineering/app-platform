@@ -1,12 +1,12 @@
 ---
 title: Error code catalog
-status: planned
-statusNote: ยังไม่มี error envelope ในโค้ด
+status: in-progress
+statusNote: error envelope ทำงานจริงแล้ว แต่มีแค่ 6 code จาก catalog นี้ที่มีจุดโยนจริงในโค้ด
 ---
 
 # Error code catalog
 
-<Status value="planned" />
+<Status value="in-progress" note="โค้ดจริงโยนแค่บางส่วนของ catalog นี้ ดูตารางท้ายหน้า" />
 
 `code` ทุกตัวที่ปรากฏใน [error envelope](/conventions/errors) ต้องอยู่ในตารางนี้ ถ้าไม่อยู่ = บั๊ก
 
@@ -138,5 +138,5 @@ UPPER_SNAKE_CASE เสมอ ไม่มีเลขต่อท้าย
 6. ถ้า client ต้องทำอะไรพิเศษกับ code นี้ ให้เขียนไว้ในคอลัมน์ "client ควรทำ"
 
 ::: warning สถานะโค้ดปัจจุบัน
-ยังไม่มี code ตัวไหนถูก implement — API ตอบรูปแบบ default ของ Nest (`{ statusCode, message, error }`) ตารางนี้คือสเปกที่ [error envelope](/conventions/errors) จะต้องทำตาม
+[error envelope](/conventions/errors) ทำงานจริงแล้ว แต่ `Errors` helper (`apps/api/src/common/errors/app.exception.ts`) มีแค่ code ที่มีจุดโยนจริงตอนนี้: `AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_INVALID`, `AUTH_REFRESH_REUSED`, `USER_EMAIL_TAKEN`, `USER_NOT_FOUND`, `AUTHZ_FORBIDDEN` — บวก `VALIDATION_FAILED`/`RESOURCE_CONFLICT`/`RESOURCE_NOT_FOUND`/`INTERNAL_ERROR` ที่ filter จัดหมวดให้อัตโนมัติ ที่เหลือในตารางนี้เป็นสเปกรอ endpoint ที่ยังไม่มี (signup, email verify, role management, file upload) ตามหลัก "เพิ่ม code ใหม่" ด้านบน — เพิ่มเมื่อมีจุดโยนจริงเท่านั้น
 :::

@@ -1,12 +1,12 @@
 ---
 title: Trace ID
-status: planned
-statusNote: ยังไม่มี genReqId, AsyncLocalStorage หรือการส่งต่อ header
+status: implemented
+statusNote: TraceIdMiddleware + AsyncLocalStorage ทำงานจริงแล้ว ฝั่ง client ยังไม่มี
 ---
 
 # Trace ID
 
-<Status value="planned" />
+<Status value="implemented" note="ฝั่ง server ครบ ฝั่ง client (api-client) ยังไม่มี" />
 
 > **หนึ่ง request หนึ่ง id และ id นั้นปรากฏบนทุกบรรทัด log ที่เกี่ยวข้อง — ตั้งแต่เบราว์เซอร์จนถึง SQL**
 
@@ -247,10 +247,10 @@ const traceId = traceparent?.split("-")[1] ?? req.header(TRACE_HEADER) ?? uuidv7
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `TraceIdMiddleware` + `AsyncLocalStorage` | ไม่มี `src/common/` เลย ไม่มี middleware |
-| `genReqId` ผูกกับ header | `LoggerModule.forRoot` ตั้งแค่ `level` กับ `transport` |
-| `redact` header ที่มีความลับ | ไม่ได้ตั้ง — `authorization` ถูก log ทั้งดุ้น |
-| Prisma log ผูก trace id | `PrismaService` ไม่ได้ subscribe event `query` |
-| client ส่ง `x-request-id` | ยังไม่มี api client ฝั่ง web |
+| `TraceIdMiddleware` + `AsyncLocalStorage` | ✅ ครอบทุก route |
+| `genReqId` ผูกกับ header | ✅ |
+| `redact` header ที่มีความลับ | ✅ (`authorization`, `cookie`, `set-cookie`) |
+| Prisma log ผูก trace id | ✅ `PrismaService` subscribe event `query` |
+| client ส่ง `x-request-id` | ยังไม่มี — `apps/web` ยังไม่มี api client เลย นอกขอบเขตรอบนี้ |
 | UI แสดง trace id | ยังไม่มีการจัดการ error บน UI |
 :::

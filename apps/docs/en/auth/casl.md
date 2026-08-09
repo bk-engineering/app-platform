@@ -1,12 +1,12 @@
 ---
 title: CASL authorization
-status: planned
-statusNote: "@casl/ability and @casl/prisma are not installed"
+status: in-progress
+statusNote: AbilityFactory + PoliciesGuard are real now on the users module — no cache, no Prisma client extension, no tests yet
 ---
 
 # CASL authorization
 
-<Status value="planned" />
+<Status value="in-progress" note="working on the users module now — no cache/Prisma extension/tests yet" />
 
 > **One ability set: enforced on the server, reused in the UI.**
 
@@ -322,11 +322,12 @@ Every row of the [permission matrix](/en/auth/rbac-model) deserves a matching te
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `@casl/ability` + `@casl/prisma` | **Neither is installed** — "casl" doesn't appear in the repo |
-| `AbilityFactory` + `PoliciesGuard` | Don't exist |
-| `accessibleBy` on every query | There's no permission system — `GET /users/:id` returns anyone to any signed-in user |
-| `GET /v1/auth/me` returning rules | No such endpoint |
-| A `Permission` table | Doesn't exist |
-| Field-level restrictions | Don't exist |
+| `@casl/ability` + `@casl/prisma` | Both installed — but `@casl/prisma`/`accessibleBy` isn't actually used yet (no list endpoint to filter, see the next row) |
+| `AbilityFactory` + `PoliciesGuard` | ✅ both are global guards |
+| `accessibleBy` on every query | Not needed yet — the only single-row read, `GET /users/:id`, uses an instance check (`ability.can('read', subject(...))`) instead, since there's no list endpoint; see [API conventions](/en/conventions/api-conventions) |
+| `GET /v1/auth/me` returning rules | ✅ (the real route is `GET /auth/me`, no `/v1` prefix — see [API conventions](/en/conventions/api-conventions)) |
+| A `Permission` table | ✅ seeded with the full [RBAC](/en/auth/rbac-model) matrix |
+| Field-level restrictions | No endpoint edits a user yet (no `PATCH /users/:id`), so field-level checks can't be exercised in real code even though each permission row already stores `fields` |
+| Caching the ability | Not done — hits the DB every request, per the doc's own recommendation |
 | Ability tests | There are no test files in the project at all |
 :::

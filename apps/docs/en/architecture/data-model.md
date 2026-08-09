@@ -1,12 +1,12 @@
 ---
 title: Data model
-status: planned
-statusNote: schema.prisma contains only the User model
+status: implemented
+statusNote: schema.prisma has all 8 models and the seed creates real RBAC data — only Account/VerificationToken/File/AuditLog have no code writing to them yet
 ---
 
 # Data model
 
-<Status value="planned" note="only the User model exists today" />
+<Status value="implemented" note="8 models + real seed data — Account/VerificationToken/File/AuditLog have no code writing to them yet" />
 
 `apps/api/prisma/schema.prisma` is the source of truth for the database. This page describes the shape it needs once [auth](/en/auth/overview) and [RBAC](/en/auth/rbac-model) are implemented.
 
@@ -74,6 +74,7 @@ erDiagram
 
   Permission {
     uuid id PK
+    text key UK "e.g. read:User:own"
     text action "manage|create|read|update|delete"
     text subject "User|Role|all"
     jsonb conditions
@@ -255,7 +256,9 @@ model Role {
 }
 
 model Permission {
-  id      String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
+  /// stable idempotency key for seeding, e.g. "read:User:own" — see the tip below
+  key     String @unique @db.VarChar(80)
   /// CASL action: manage | create | read | update | delete
   action  String @db.VarChar(32)
   /// CASL subject: User | Role | all
@@ -267,9 +270,13 @@ model Permission {
 
   roles RolePermission[]
 
-  @@unique([action, subject])
+  @@index([action, subject])
   @@map("permissions")
 }
+
+::: tip Why `key` instead of `@@unique([action, subject])`
+The permission matrix needs two rows sharing an (action, subject) pair with different `conditions` — e.g. unrestricted `read User` (manager) vs. self-only `read User` (member). The originally drafted `@@unique([action, subject])` blocks exactly that, so this replaces it with a hand-picked `key` slug set at seed time (e.g. `"read:User:own"`) as the idempotency key instead. See [RBAC](/en/auth/rbac-model) and the real `apps/api/prisma/seed.ts`.
+:::
 
 model UserRole {
   userId String @map("user_id") @db.Uuid
@@ -392,9 +399,10 @@ The principle is **expand then contract** — during a deploy, old and new code 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| 8 models + 2 join tables | **Only `User`** (id, email, displayName, passwordHash, createdAt, updatedAt) |
-| Emails as `citext` | Plain `text` — `A@b.com` and `a@b.com` can both exist |
-| snake_case column names | No `@map` at all; columns are `displayName`, `passwordHash` |
-| Soft delete | No `deletedAt` |
-| Seed creates roles and permissions | `seed.ts` upserts one user with no `NODE_ENV` guard |
+| 8 models + 2 join tables | Done ✅ (see `key` vs. `@@unique([action, subject])` on `Permission` — tip above) |
+| Emails as `citext` | ✅ |
+| snake_case column names | ✅ |
+| Soft delete on `User` | ✅ (`deletedAt`) |
+| Seed creates roles and permissions | ✅ full permission matrix per [RBAC](/en/auth/rbac-model), idempotent, `NODE_ENV`-guarded |
+| `Account`, `VerificationToken`, `File`, `AuditLog` actually used | Not yet — the tables exist in the schema, but no endpoint reads or writes them (Google OAuth, email verification, file upload, and audit logging aren't implemented) |
 :::

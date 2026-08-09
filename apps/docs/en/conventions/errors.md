@@ -1,12 +1,12 @@
 ---
 title: Error envelope
-status: planned
-statusNote: still Nest's default error shape; no exception filter exists
+status: implemented
+statusNote: AllExceptionsFilter is real now
 ---
 
 # Error envelope
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **Every error leaving the API has the same shape. No exceptions.**
 
@@ -368,9 +368,10 @@ That's what turns a user report into an instant log lookup. See [Trace ID](/en/p
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| A global `AllExceptionsFilter` | No filter at all — Nest returns its default `{statusCode, message, error}` |
-| `ErrorEnvelopeSchema` in contracts | No `error.schema.ts` exists |
-| Every error carries a `traceId` | There are no trace ids in the system |
-| Prisma errors are mapped | `users.service.ts` catches duplicates itself and throws Nest's `ConflictException` |
-| Error messages are translated | No `errors` namespace in `messages/{th,en}.json` |
+| A global `AllExceptionsFilter` | ✅ |
+| `ErrorEnvelopeSchema` in contracts | ✅ `packages/contracts/src/error.schema.ts` |
+| Every error carries a `traceId` | ✅ |
+| Prisma errors are mapped | ✅ (P2002 → 409, P2025 → 404) |
+| `Errors` helper covers the whole catalog | Only the codes actually thrown today (`AUTH_INVALID_CREDENTIALS`, `AUTH_REFRESH_INVALID`, `AUTH_REFRESH_REUSED`, `USER_EMAIL_TAKEN`, `USER_NOT_FOUND`, `AUTHZ_FORBIDDEN`) — add more as the [catalog](/en/reference/error-codes) actually needs them |
+| Error messages are translated | No `errors` namespace in `messages/{th,en}.json` — that's `apps/web` work, out of scope this round |
 :::

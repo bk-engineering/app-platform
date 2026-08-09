@@ -1,12 +1,12 @@
 ---
 title: JWT & refresh rotation
-status: in-progress
-statusNote: ออก token ได้แต่ไม่มี rotation ไม่มีตาราง ไม่มีการเพิกถอน
+status: implemented
+statusNote: rotation + reuse detection ทำงานจริงแล้ว เหลือแค่ logout/logout-all และ issuer/audience check
 ---
 
 # JWT & refresh rotation
 
-<Status value="in-progress" />
+<Status value="implemented" note="rotation + reuse detection ทำงานจริงแล้ว เหลือ logout/logout-all" />
 
 ## ปัญหาของ refresh token ที่ไม่ rotate
 
@@ -300,14 +300,14 @@ WHERE expires_at < now() - interval '30 days';
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| ตาราง `RefreshToken` เก็บ hash + family | ไม่มีตาราง refresh เป็น stateless ทั้งหมด |
-| rotate ทุกครั้งที่ refresh | `refresh()` แค่ verify แล้ว re-sign — ตัวเก่ายังใช้ได้จนหมดอายุ |
-| จับการใช้ซ้ำ | เป็นไปไม่ได้ ไม่มี state ให้เทียบ |
-| logout / logout-all | ไม่มี endpoint |
-| refresh token เป็น random ไม่ใช่ JWT | เป็น JWT ที่ payload เหมือน access token เป๊ะ |
-| ตรวจ `issuer` / `audience` | ไม่ได้ตั้งทั้งตอนเซ็นและตอน verify |
-| แยก expired ออกจาก invalid | `JwtAuthGuard` เป็น `AuthGuard("jwt")` เปล่า ๆ ได้ 401 เหมือนกันหมด |
-| guard เป็น global + `@Public()` | opt-in ต่อ route — `POST /users` เปิด public |
-| route แยก `/auth/login` + `/auth/refresh` | รวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant (`grant_type=password` \| `refresh_token`) เพื่อให้ Swagger UI ใช้ oauth2 password flow auto-attach token ได้ — ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
-| access token มี `roles` | payload มีแค่ `sub` กับ `email` |
+| ตาราง `RefreshToken` เก็บ hash + family | ✅ |
+| rotate ทุกครั้งที่ refresh | ✅ |
+| จับการใช้ซ้ำ → เพิกถอนทั้ง family | ✅ (ดู `RefreshTokenService.rotate()` — ต้อง revoke แล้วค่อย throw **นอก** `$transaction` ไม่งั้นการเพิกถอนจะถูก rollback ไปพร้อมกับ error ที่โยนออกมา ซึ่งเป็นบั๊กที่พบตอน implement จากโค้ดตัวอย่างเดิมในหน้านี้) |
+| logout / logout-all | ยังไม่มี endpoint |
+| refresh token เป็น random ไม่ใช่ JWT | ✅ `randomBytes(32).toString("base64url")` — `JWT_REFRESH_SECRET` เลิกใช้แล้ว ดู [Environment variables](/reference/env-vars) |
+| ตรวจ `issuer` / `audience` | ยังไม่ได้ตั้งทั้งตอนเซ็นและตอน verify |
+| แยก expired ออกจาก invalid | `JwtAuthGuard` ยังเป็น `AuthGuard("jwt")` เปล่า ๆ ได้ 401 เหมือนกันหมด |
+| guard เป็น global + `@Public()` | ✅ `JwtAuthGuard` + `PoliciesGuard` เป็น `APP_GUARD` ทั้งคู่, `POST /users` ต้อง auth (manager ขึ้นไป) แล้ว |
+| route แยก `/auth/login` + `/auth/refresh` | รวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant (`grant_type=password` \| `refresh_token`) — ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
+| access token มี `roles` | payload มีแค่ `sub` กับ `email` — ไม่จำเป็นสำหรับ CASL เพราะ `AbilityFactory` คำนวณสิทธิ์จาก DB สดทุกครั้งอยู่แล้ว ไม่ได้อ่านจาก JWT |
 :::

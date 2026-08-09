@@ -1,12 +1,12 @@
 ---
 title: Trace ID
-status: planned
-statusNote: no genReqId, no AsyncLocalStorage, no header propagation
+status: implemented
+statusNote: TraceIdMiddleware + AsyncLocalStorage are real now — the client side isn't
 ---
 
 # Trace ID
 
-<Status value="planned" />
+<Status value="implemented" note="server side is complete; the client side (api-client) doesn't exist yet" />
 
 > **One request, one id — and that id appears on every log line it touches, from the browser down to the SQL.**
 
@@ -247,10 +247,10 @@ const traceId = traceparent?.split("-")[1] ?? req.header(TRACE_HEADER) ?? uuidv7
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `TraceIdMiddleware` + `AsyncLocalStorage` | No `src/common/` at all; no middleware |
-| `genReqId` tied to the header | `LoggerModule.forRoot` only sets `level` and `transport` |
-| `redact` for secret headers | Not configured — `authorization` is logged in full |
-| Prisma logs carry the trace id | `PrismaService` doesn't subscribe to the `query` event |
-| Client sends `x-request-id` | There's no API client on the web side |
+| `TraceIdMiddleware` + `AsyncLocalStorage` | ✅ covers every route |
+| `genReqId` tied to the header | ✅ |
+| `redact` for secret headers | ✅ (`authorization`, `cookie`, `set-cookie`) |
+| Prisma logs carry the trace id | ✅ `PrismaService` subscribes to the `query` event |
+| Client sends `x-request-id` | Not yet — `apps/web` has no API client at all, out of scope this round |
 | UI displays the trace id | There's no error handling in the UI |
 :::

@@ -1,18 +1,202 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [citext]
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  displayName  String
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique @db.Citext
+  displayName     String     @db.VarChar(120)
+  /// null when the user only ever signed up through Google
+  passwordHash    String?
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  status          UserStatus @default(ACTIVE)
+  locale          String     @default("th") @db.VarChar(5)
+  theme           String     @default("system") @db.VarChar(10)
 
+  avatarFileId String? @map("avatar_file_id") @db.Uuid
+  avatarFile   File?   @relation("UserAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+
+  roles              UserRole[]
+  accounts           Account[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+  auditLogs          AuditLog[] @relation("AuditActor")
+  uploadedFiles      File[]     @relation("FileUploader")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([status, createdAt])
+  @@index([deletedAt])
   @@map("users")
+}
+
+model Account {
+  id                String @id @default(uuid()) @db.Uuid
+  userId            String @map("user_id") @db.Uuid
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String @db.VarChar(32)
+  providerAccountId String @map("provider_account_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// one Google account can only ever be linked to one user
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model RefreshToken {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 of the token — never the raw value, so a DB leak can't be turned into sessions
+  tokenHash String @unique @map("token_hash")
+  /// every token descended from one login shares this id
+  familyId  String @map("family_id") @db.Uuid
+
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent")
+  ip        String?   @db.Inet
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model VerificationToken {
+  id      String       @id @default(uuid()) @db.Uuid
+  userId  String       @map("user_id") @db.Uuid
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose TokenPurpose
+
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, purpose])
+  @@index([expiresAt])
+  @@map("verification_tokens")
+}
+
+model Role {
+  id   String @id @default(uuid()) @db.Uuid
+  key  String @unique @db.VarChar(64)
+  name String @db.VarChar(120)
+  /// system roles can't be deleted or renamed through the UI
+  isSystem Boolean @default(false) @map("is_system")
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("roles")
+}
+
+model Permission {
+  id String @id @default(uuid()) @db.Uuid
+  /// stable idempotency key for seeding, e.g. "read:User:own" — replaces the doc's
+  /// literal `@@unique([action, subject])`, which can't hold two rows sharing an
+  /// (action, subject) pair with different `conditions` (needed for "read own" vs
+  /// "read any" on the same subject).
+  key     String @unique @db.VarChar(80)
+  /// CASL action: manage | create | read | update | delete
+  action  String @db.VarChar(32)
+  /// CASL subject: User | Role | all | ...
+  subject String @db.VarChar(64)
+  /// MongoQuery-shaped condition, e.g. {"id": "${user.id}"}
+  conditions Json?
+  /// restrict to specific fields — empty = every field
+  fields String[]
+
+  roles RolePermission[]
+
+  @@index([action, subject])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model File {
+  id         String @id @default(uuid()) @db.Uuid
+  storageKey String @unique @map("storage_key")
+  mimeType   String @map("mime_type") @db.VarChar(128)
+  sizeBytes  Int    @map("size_bytes")
+
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User?   @relation("FileUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  avatarOf User[] @relation("UserAvatar")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("files")
+}
+
+model AuditLog {
+  id      String  @id @default(uuid()) @db.Uuid
+  actorId String? @map("actor_id") @db.Uuid
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  action      String  @db.VarChar(64)
+  subjectType String  @map("subject_type") @db.VarChar(64)
+  subjectId   String? @map("subject_id") @db.Uuid
+  /// { field: { from, to } } — never put secrets in here
+  changes Json?
+  /// ties this log row to the request log lines that caused it
+  traceId String @map("trace_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([subjectType, subjectId])
+  @@index([actorId, createdAt])
+  @@index([traceId])
+  @@map("audit_logs")
 }

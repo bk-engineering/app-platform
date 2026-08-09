@@ -1,12 +1,12 @@
 ---
 title: วงจรชีวิตของ request
-status: planned
-statusNote: pipeline ฝั่ง Nest มีแค่ ZodValidationPipe กับ JwtAuthGuard
+status: in-progress
+statusNote: pipeline ฝั่ง Nest (middleware → guard → pipe → filter) ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client
 ---
 
 # วงจรชีวิตของ request
 
-<Status value="planned" />
+<Status value="in-progress" note="pipeline ฝั่ง Nest ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client" />
 
 ตาม request หนึ่งอันตั้งแต่คลิกจนถึงพิกเซล ทั้งตอนสำเร็จและตอนพัง หน้านี้คือที่ที่ [contract](/conventions/contract-first), [error envelope](/conventions/errors) และ [trace id](/platform/trace-id) มาบรรจบกัน
 
@@ -185,10 +185,10 @@ service ห้าม import `Request`, `Response` หรือ `HttpStatus` ต�
 ::: warning สถานะโค้ดปัจจุบัน
 | ชั้น | โค้ดวันนี้ |
 | --- | --- |
-| Middleware | ไม่มีเลย |
-| Guards | มี `JwtAuthGuard` แต่ใช้แบบ opt-in ต่อ route ไม่มี `PoliciesGuard` |
-| Interceptors | ไม่มี |
+| Middleware | `TraceIdMiddleware` ทำงานจริง ครอบทุก route ✅ |
+| Guards | `JwtAuthGuard` + `PoliciesGuard` เป็น global guard ทั้งคู่ (`APP_GUARD`) พร้อม `@Public()` ✅ |
+| Interceptors | ยังไม่มี (จับเวลา/cache) |
 | Pipes | มี `ZodValidationPipe` แบบ global ✅ |
-| Filters | ไม่มี — ใช้ error handler default ของ Nest |
-| ฝั่ง client | ไม่มี `api-client` ไม่มี refresh interceptor `providers.tsx` มี `QueryClient` เปล่า ๆ |
+| Filters | `AllExceptionsFilter` แบบ global ✅ |
+| ฝั่ง client | ไม่มี `api-client` ไม่มี refresh interceptor `providers.tsx` มี `QueryClient` เปล่า ๆ — นอกขอบเขตของรอบนี้ ผูกกับ [ADR-0006](/adr/0006-token-storage-httponly-cookie) |
 :::

@@ -1,12 +1,12 @@
 ---
 title: JWT & refresh rotation
-status: in-progress
-statusNote: tokens are issued but there is no rotation, no table, and no revocation
+status: implemented
+statusNote: rotation + reuse detection are real now — logout/logout-all and issuer/audience checks are still missing
 ---
 
 # JWT & refresh rotation
 
-<Status value="in-progress" />
+<Status value="implemented" note="rotation + reuse detection are real now — logout/logout-all is still missing" />
 
 ## The problem with non-rotating refresh tokens
 
@@ -301,14 +301,14 @@ Keeping expired rows for another 30 days is deliberate — delete them immediate
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| A `RefreshToken` table with hashes and families | No table; refresh is entirely stateless |
-| Rotate on every refresh | `refresh()` just verifies and re-signs — the old token lives until expiry |
-| Reuse detection | Impossible; there's no state to compare against |
-| logout / logout-all | No endpoints |
-| Refresh tokens are random, not JWTs | They're JWTs with the same payload as access tokens |
-| `issuer` / `audience` checks | Set neither when signing nor when verifying |
-| Expired distinguished from invalid | `JwtAuthGuard` is a bare `AuthGuard("jwt")` — everything is one 401 |
-| Global guard + `@Public()` | Opt-in per route; `POST /users` is public |
-| Access tokens carry `roles` | The payload has only `sub` and `email` |
-| Separate `/auth/login` + `/auth/refresh` routes | Merged into one `POST /auth/token` per the OAuth2 grant (`grant_type=password` \| `refresh_token`), so Swagger UI's oauth2 password flow can auto-attach the token — see [OpenAPI § OAuth2 password flow](/en/backend/openapi) |
+| A `RefreshToken` table with hashes and families | ✅ |
+| Rotate on every refresh | ✅ |
+| Reuse detection → revoke the whole family | ✅ (see `RefreshTokenService.rotate()` — the revocation must commit and the error must throw **outside** the `$transaction`, or the revocation gets rolled back along with the thrown error, a bug found in this page's own original sample code while implementing it) |
+| logout / logout-all | No endpoints yet |
+| Refresh tokens are random, not JWTs | ✅ `randomBytes(32).toString("base64url")` — `JWT_REFRESH_SECRET` is retired, see [Environment variables](/en/reference/env-vars) |
+| `issuer` / `audience` checks | Still set neither when signing nor when verifying |
+| Expired distinguished from invalid | `JwtAuthGuard` is still a bare `AuthGuard("jwt")` — everything is one 401 |
+| Global guard + `@Public()` | ✅ `JwtAuthGuard` + `PoliciesGuard` are both `APP_GUARD`; `POST /users` now requires auth (manager or above) |
+| Access tokens carry `roles` | The payload has only `sub` and `email` — not needed for CASL, since `AbilityFactory` always recomputes permissions fresh from the database rather than reading the JWT |
+| Separate `/auth/login` + `/auth/refresh` routes | Merged into one `POST /auth/token` per the OAuth2 grant (`grant_type=password` \| `refresh_token`) — see [OpenAPI § OAuth2 password flow](/en/backend/openapi) |
 :::

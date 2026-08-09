@@ -1,12 +1,12 @@
 ---
 title: CASL authorization
-status: planned
-statusNote: ยังไม่ได้ติดตั้ง @casl/ability และ @casl/prisma
+status: in-progress
+statusNote: AbilityFactory + PoliciesGuard ทำงานจริงแล้ว บน users module — ยังไม่มี cache, ยังไม่มี Prisma client extension, ยังไม่มีเทส
 ---
 
 # CASL authorization
 
-<Status value="planned" />
+<Status value="in-progress" note="ทำงานจริงบน users module แล้ว — ยังไม่มี cache/Prisma extension/เทส" />
 
 > **ability ชุดเดียว บังคับที่ server ใช้ซ้ำที่ UI**
 
@@ -322,11 +322,12 @@ describe("ability ของ manager", () => {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `@casl/ability` + `@casl/prisma` | **ไม่ได้ติดตั้งทั้งคู่** — ไม่มีคำว่า casl ใน repo |
-| `AbilityFactory` + `PoliciesGuard` | ไม่มี |
-| `accessibleBy` ในทุก query | ไม่มีระบบสิทธิ์เลย — `GET /users/:id` คืนใครก็ได้ให้ user ที่ล็อกอินคนใดก็ได้ |
-| `GET /v1/auth/me` ส่ง rules | ไม่มี endpoint |
-| ตาราง `Permission` | ไม่มี |
-| จำกัดระดับ field | ไม่มี |
+| `@casl/ability` + `@casl/prisma` | ติดตั้งแล้ว — แต่ `@casl/prisma`/`accessibleBy` ยังไม่ได้ใช้จริง (ไม่มี list endpoint ให้กรอง ดูแถวถัดไป) |
+| `AbilityFactory` + `PoliciesGuard` | ✅ ทั้งคู่เป็น global guard |
+| `accessibleBy` ในทุก query | ยังไม่ต้องใช้ — endpoint เดียวที่อ่านทีละแถวคือ `GET /users/:id` ใช้ instance check (`ability.can('read', subject(...))`) แทน เพราะไม่มี list endpoint ดู [ข้อตกลง API](/conventions/api-conventions) |
+| `GET /v1/auth/me` ส่ง rules | ✅ (route จริงคือ `GET /auth/me` ไม่มี `/v1` prefix ดู [ข้อตกลง API](/conventions/api-conventions)) |
+| ตาราง `Permission` | ✅ พร้อม seed เต็มตาม [RBAC](/auth/rbac-model) |
+| จำกัดระดับ field | ยังไม่มี endpoint ที่แก้ไข user ได้ (ไม่มี `PATCH /users/:id`) จึงยังพิสูจน์ field-level check ไม่ได้ในโค้ดจริง แม้ permission row จะมี `fields` เก็บไว้แล้ว |
+| แคช ability | ไม่ทำ — ยิง DB ทุก request ตามที่เอกสารแนะนำ |
 | เทส ability | ไม่มีไฟล์เทสในโปรเจกต์เลย |
 :::

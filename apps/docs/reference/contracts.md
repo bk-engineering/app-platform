@@ -1,12 +1,12 @@
 ---
 title: Contract schema catalog
 status: in-progress
-statusNote: schema ที่มีอยู่ตรงกับโค้ดจริง แต่ยังใช้แค่ฝั่ง api และยังขาด schema ที่สเปกอื่นอ้างถึง
+statusNote: schema ที่มีอยู่ตรงกับโค้ดจริง รวม error.schema.ts และ ability.schema.ts แล้ว แต่ฝั่ง web ยังไม่ import เลย
 ---
 
 # Contract schema catalog
 
-<Status value="in-progress" note="schema ที่มีอยู่ครบตามด้านล่าง แต่ฝั่ง web ยังไม่ import และยังขาดบางไฟล์" />
+<Status value="in-progress" note="ครบ 5 ไฟล์แล้ว แต่ฝั่ง web ยังไม่ import" />
 
 ทุก schema ที่ export จริงจาก `packages/contracts/src` วันนี้ — วิธีใช้และกฎการแก้ schema อยู่ที่ [Contract-first](/conventions/contract-first) หน้านี้เป็นแค่ catalog ตรวจสอบได้กับ source
 
@@ -16,9 +16,11 @@ statusNote: schema ที่มีอยู่ตรงกับโค้ดจ�
 export * from "./common.schema";
 export * from "./user.schema";
 export * from "./auth.schema";
+export * from "./error.schema";
+export * from "./ability.schema";
 ```
 
-ทุกอย่างที่ import จาก `@app-platform/contracts` มาจากสามไฟล์นี้
+ทุกอย่างที่ import จาก `@app-platform/contracts` มาจากห้าไฟล์นี้
 
 ## `common.schema.ts`
 
@@ -67,23 +69,40 @@ const PaginatedUserSchema = paginatedSchema(UserSchema);
 เดิม `/auth/login` กับ `/auth/refresh` เป็นสอง endpoint แยก รับ/คืน JSON แบบ camelCase อิสระ ไม่ตรง spec ไหน — เปลี่ยนมารวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant flow เพื่อให้ Swagger UI ใช้ปุ่ม **Authorize → oauth2 (password)** ขอ token ให้อัตโนมัติได้ในตัว (ดู [OpenAPI / Swagger](/backend/openapi)) แลกกับ body ต้องเป็น `application/x-www-form-urlencoded` และ field ชื่อตาม RFC แทน camelCase
 :::
 
+## `error.schema.ts`
+
+| ชื่อ | ชนิด | รูปร่าง |
+| --- | --- | --- |
+| `ErrorDetailSchema` | schema | `{ field: string \| null, code: string, message: string }` |
+| `ErrorDetail` | type | `z.infer<typeof ErrorDetailSchema>` |
+| `ErrorEnvelopeSchema` | schema | `{ code: string, message: string, traceId: string, timestamp: ISO datetime, path: string, details: ErrorDetail[] (default []) }` |
+| `ErrorEnvelope` | type | `z.infer<typeof ErrorEnvelopeSchema>` |
+
+ตรงตามสเปกใน [Error envelope](/conventions/errors) ทุก field — `AllExceptionsFilter` ประกอบ object นี้จริงในทุก error response
+
+## `ability.schema.ts`
+
+| ชื่อ | ชนิด | รูปร่าง |
+| --- | --- | --- |
+| `ACTIONS` | const array | `["manage", "create", "read", "update", "delete"]` |
+| `SUBJECTS` | const array | `["all", "User", "Role", "Permission", "AuditLog", "File"]` |
+| `AppAction` / `AppSubject` | type | union ของค่าใน `ACTIONS`/`SUBJECTS` |
+| `RawRuleSchema` | schema | `{ action, subject, fields?: string[], conditions?: Record<string, ...>, inverted?: boolean, reason?: string }` — `conditions` เปิดเฉพาะ `$eq`/`$ne`/`$in`/`$nin` ผ่าน `.strict()` |
+| `RawRule` | type | `z.infer<typeof RawRuleSchema>` |
+| `AbilityRulesSchema` | schema | `z.array(RawRuleSchema)` — รูปร่างของ `rules` ที่ `GET /auth/me` คืนกลับ |
+
 ## ใครใช้ schema พวกนี้จริง ๆ
 
 | ฝั่ง | ใช้ยังไง |
 | --- | --- |
-| `apps/api` | ทุก DTO ของ `AuthController`/`UsersController` extend จาก `createZodDto(<Schema>)` ของ `nestjs-zod` — ดู `apps/api/src/auth/dto/login.dto.ts` และ `apps/api/src/users/dto/create-user.dto.ts` |
+| `apps/api` | ทุก DTO ของ `AuthController`/`UsersController` extend จาก `createZodDto(<Schema>)` ของ `nestjs-zod` — ดู `apps/api/src/auth/dto/token-request.dto.ts` และ `apps/api/src/users/dto/create-user.dto.ts`. `AllExceptionsFilter` ประกอบ `ErrorEnvelope` ทุก error, `AbilityFactory` ประกอบ `AbilityRulesSchema.parse(...)` ทุกครั้งที่สร้าง ability |
 | `apps/web` | **ยังไม่ import schema พวกนี้เลย** — ฟอร์มฝั่ง web ยังไม่ validate ด้วย zod schema ร่วม ดู [Contract-first § ฝั่ง Web ใช้ยังไง](/conventions/contract-first) สำหรับรูปแบบที่ตั้งเป้าไว้ |
-
-## Schema ที่สเปกอื่นอ้างถึงแต่ยังไม่มีในแพ็กเกจนี้
-
-- `ErrorEnvelopeSchema`, `ErrorDetailSchema` — สเปกอยู่ที่ [Error envelope](/conventions/errors) แต่ไฟล์ `error.schema.ts` ยังไม่ถูกสร้างใน `packages/contracts/src`
-- `AbilitySchema`/type ของ CASL rule — พูดถึงใน [CASL authorization](/auth/casl) ในชื่อ `packages/contracts/src/ability.schema.ts` แต่ยังไม่มีไฟล์นี้จริง
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `error.schema.ts` สำหรับ error envelope | ยังไม่มีไฟล์ |
-| `ability.schema.ts` สำหรับ CASL | ยังไม่มีไฟล์ |
+| `error.schema.ts` สำหรับ error envelope | ✅ |
+| `ability.schema.ts` สำหรับ CASL | ✅ |
 | ฝั่ง web import และใช้ schema ตอน validate ฟอร์ม | ยังไม่มีการ import จาก `@app-platform/contracts` ใน `apps/web` เลย |
 | `paginatedSchema()` ถูกใช้จริงในอย่างน้อยหนึ่ง endpoint | ยังไม่มี endpoint ไหนคืนลิสต์แบบแบ่งหน้า |
 :::

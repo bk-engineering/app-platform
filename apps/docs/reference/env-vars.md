@@ -37,10 +37,14 @@ statusNote: ตัวที่มีอยู่ยังไม่ถูก vali
 | --- | --- | --- | --- | --- | --- |
 | `API_PORT` | ⚙️🐳 | | `4000` | | อ่านจาก `process.env` ตรง ๆ ใน `main.ts` |
 | `JWT_ACCESS_SECRET` | ⚙️ | ✅ | — | 🔒 | ต้อง ≥ 32 ตัวอักษร สร้างด้วย `openssl rand -base64 48` |
-| `JWT_REFRESH_SECRET` | ⚙️ | ✅ | — | 🔒 | **ต้องต่างจาก access secret** |
 | `JWT_ACCESS_EXPIRES_IN` | ⚙️ | | `15m` | | สั้นไว้ดี — token ที่หลุดจะหมดอายุเร็ว |
-| `JWT_REFRESH_EXPIRES_IN` | ⚙️ | | `7d` | | ระยะที่ผู้ใช้ยังไม่ต้อง login ใหม่ |
 | `LOG_LEVEL` | ⚙️ | | `info` (`.env.example` ตั้ง `debug`) | | `debug` เฉพาะ non-production — มีข้อมูล query |
+| `SEED_ADMIN_EMAIL` | ⚙️ | ✅ ตอน seed | — | | ผู้ดูแลคนแรก ดู `seed.ts` |
+| `SEED_ADMIN_PASSWORD` | ⚙️ | ✅ ตอน seed | — | 🔒 | ต้องเปลี่ยนหลัง login ครั้งแรก — ยังไม่มี guard บังคับเรื่องนี้ในโค้ด |
+
+::: tip `JWT_REFRESH_SECRET` เลิกใช้แล้ว
+refresh token เปลี่ยนจาก JWT เป็น random string ที่เก็บ hash ไว้ใน DB (ดู [JWT & rotation](/auth/tokens)) จึงไม่ต้องมี secret แยกสำหรับ sign/verify refresh token อีกต่อไป
+:::
 
 ::: danger ค่าตัวอย่างของ secret ต้องไม่ถูกใช้จริง
 `.env.example` ตั้ง `JWT_ACCESS_SECRET=change-me-access-secret` และ `.env.example` กับ `.env` เหมือนกันทุกไบต์ แปลว่ามีโอกาสสูงที่จะมีคนก๊อปไปใช้ทั้งดุ้น [EnvSchema](/platform/config) จึงมี `refine` ที่บล็อกค่าขึ้นต้นด้วย `change-me` ไว้
@@ -111,13 +115,6 @@ statusNote: ตัวที่มีอยู่ยังไม่ถูก vali
 | `THROTTLE_TTL` | `60` | ขนาดหน้าต่าง (วินาที) |
 | `THROTTLE_LIMIT` | `100` | จำนวน request ต่อหน้าต่างของ endpoint ทั่วไป |
 | `THROTTLE_AUTH_LIMIT` | `5` | เฉพาะ login/forgot-password — เข้มกว่ามาก |
-
-### Seed
-
-| ตัวแปร | บังคับ | ความลับ | หมายเหตุ |
-| --- | --- | --- | --- |
-| `SEED_ADMIN_EMAIL` | ✅ ตอน seed | | ผู้ดูแลคนแรก |
-| `SEED_ADMIN_PASSWORD` | ✅ ตอน seed | 🔒 | ต้องเปลี่ยนหลัง login ครั้งแรก |
 
 ### ไฟล์
 

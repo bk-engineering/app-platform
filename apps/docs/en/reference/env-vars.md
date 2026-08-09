@@ -37,10 +37,14 @@ The complete list. Validation is described at [Config & environment](/en/platfor
 | --- | --- | --- | --- | --- | --- |
 | `API_PORT` | ⚙️🐳 | | `4000` | | Read straight from `process.env` in `main.ts` |
 | `JWT_ACCESS_SECRET` | ⚙️ | ✅ | — | 🔒 | ≥ 32 characters. Generate with `openssl rand -base64 48` |
-| `JWT_REFRESH_SECRET` | ⚙️ | ✅ | — | 🔒 | **Must differ from the access secret** |
 | `JWT_ACCESS_EXPIRES_IN` | ⚙️ | | `15m` | | Keep it short — a leaked token expires fast |
-| `JWT_REFRESH_EXPIRES_IN` | ⚙️ | | `7d` | | How long before a user must log in again |
 | `LOG_LEVEL` | ⚙️ | | `info` (`.env.example` sets `debug`) | | `debug` only outside production — it contains queries |
+| `SEED_ADMIN_EMAIL` | ⚙️ | ✅ when seeding | — | | The first administrator, see `seed.ts` |
+| `SEED_ADMIN_PASSWORD` | ⚙️ | ✅ when seeding | — | 🔒 | Must be changed on first login — no guard enforces that yet |
+
+::: tip `JWT_REFRESH_SECRET` is retired
+Refresh tokens moved from JWTs to random strings whose hash is stored in the database (see [JWT & rotation](/en/auth/tokens)), so there's no longer a separate secret to sign or verify them with.
+:::
 
 ::: danger The placeholder secrets must never be used
 `.env.example` ships `JWT_ACCESS_SECRET=change-me-access-secret`, and `.env.example` and `.env` are byte-identical — so someone very likely copied the whole file. That's why [EnvSchema](/en/platform/config) refuses anything starting with `change-me`.
@@ -111,13 +115,6 @@ Setting one requires setting all three — [EnvSchema](/en/platform/config) enfo
 | `THROTTLE_TTL` | `60` | Window size in seconds |
 | `THROTTLE_LIMIT` | `100` | Requests per window for normal endpoints |
 | `THROTTLE_AUTH_LIMIT` | `5` | Login and forgot-password only — much stricter |
-
-### Seeding
-
-| Variable | Required | Secret | Notes |
-| --- | --- | --- | --- |
-| `SEED_ADMIN_EMAIL` | ✅ when seeding | | The first administrator |
-| `SEED_ADMIN_PASSWORD` | ✅ when seeding | 🔒 | Must be changed on first login |
 
 ### File storage
 

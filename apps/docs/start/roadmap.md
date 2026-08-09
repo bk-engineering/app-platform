@@ -24,8 +24,8 @@ status: implemented
 | [ภาพรวมระบบ](/architecture/overview) | <Status value="implemented" inline /> | |
 | [Container & routing](/architecture/containers) | <Status value="implemented" inline /> | ยังไม่มี compose/Dockerfile สำหรับ production |
 | [Tech stack & เหตุผล](/architecture/tech-stack) | <Status value="implemented" inline /> | |
-| [วงจรชีวิตของ request](/architecture/request-lifecycle) | <Status value="planned" inline /> | ยังไม่มี interceptor / exception filter |
-| [Data model](/architecture/data-model) | <Status value="planned" inline /> | schema มีแค่ `User` |
+| [วงจรชีวิตของ request](/architecture/request-lifecycle) | <Status value="in-progress" inline /> | pipeline ฝั่ง Nest ทำงานจริงแล้ว เหลือ interceptor กับฝั่ง client |
+| [Data model](/architecture/data-model) | <Status value="implemented" inline /> | 8 model + seed จริงแล้ว |
 
 ### ข้อตกลง & ข้ามระบบ
 
@@ -33,12 +33,12 @@ status: implemented
 | --- | --- | --- |
 | [Contract-first](/conventions/contract-first) | <Status value="in-progress" inline /> | contracts ใช้กับ api แล้ว ฝั่ง web ยังไม่ได้ใช้ |
 | [ข้อตกลงของ API](/conventions/api-conventions) | <Status value="in-progress" inline /> | ไม่มี `/v1` prefix, `paginatedSchema` ยังไม่มีใครใช้ |
-| [Error envelope](/conventions/errors) | <Status value="planned" inline /> | ยังใช้รูปแบบ error default ของ Nest |
-| [โครงสร้างโฟลเดอร์ · api](/conventions/structure-api) | <Status value="in-progress" inline /> | มีแค่ auth, users, prisma, health |
+| [Error envelope](/conventions/errors) | <Status value="implemented" inline /> | |
+| [โครงสร้างโฟลเดอร์ · api](/conventions/structure-api) | <Status value="in-progress" inline /> | มีแค่ auth, users, prisma, health, common |
 | [โครงสร้างโฟลเดอร์ · web](/conventions/structure-web) | <Status value="in-progress" inline /> | มีแค่ route เดียว |
-| [Trace ID](/platform/trace-id) | <Status value="planned" inline /> | ไม่มี `genReqId`, ไม่มี AsyncLocalStorage |
+| [Trace ID](/platform/trace-id) | <Status value="implemented" inline /> | ฝั่ง server ครบ ฝั่ง client ยังไม่มี |
 | [Config & environment](/platform/config) | <Status value="planned" inline /> | `ConfigModule` ไม่มี `validate` |
-| [Observability & logging](/platform/observability) | <Status value="in-progress" inline /> | pino ต่อแล้ว แต่ยังไม่ผูกกับ trace id |
+| [Observability & logging](/platform/observability) | <Status value="in-progress" inline /> | pino ผูกกับ trace id แล้ว ยังไม่มี dashboard/alert |
 | [Health checks](/platform/health) | <Status value="in-progress" inline /> | `GET /health` เป็น liveness เฉย ๆ ไม่เช็ค DB/Redis |
 | [Security checklist](/platform/security) | <Status value="planned" inline /> | CORS เปิดกว้าง, ไม่มี helmet, ไม่มี rate limit |
 
@@ -47,13 +47,13 @@ status: implemented
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
 | [ภาพรวม auth](/auth/overview) | <Status value="in-progress" inline /> | |
-| [JWT & refresh rotation](/auth/tokens) | <Status value="in-progress" inline /> | ออก token ได้ แต่ไม่มี rotation/revoke |
+| [JWT & refresh rotation](/auth/tokens) | <Status value="implemented" inline /> | rotation + reuse detection ทำงานจริง เหลือ logout/logout-all |
 | [เข้าสู่ระบบ](/auth/login) | <Status value="in-progress" inline /> | endpoint มี · หน้าเว็บยังไม่มี |
-| [สมัครสมาชิก & Google OAuth](/auth/signup) | <Status value="planned" inline /> | `POST /users` มีอยู่แต่ **ไม่มี guard** · ไม่มี OAuth |
+| [สมัครสมาชิก & Google OAuth](/auth/signup) | <Status value="planned" inline /> | `POST /users` ต้อง auth แล้ว (manager ขึ้นไป) แต่ยังไม่ใช่ self-signup flow · ไม่มี OAuth |
 | [ลืมรหัสผ่าน](/auth/forgot-password) | <Status value="planned" inline /> | |
 | [ยืนยันอีเมล](/auth/email-verification) | <Status value="planned" inline /> | |
-| [Role & permission model](/auth/rbac-model) | <Status value="planned" inline /> | |
-| [CASL authorization](/auth/casl) | <Status value="planned" inline /> | ไม่ได้ติดตั้ง `@casl/*` |
+| [Role & permission model](/auth/rbac-model) | <Status value="implemented" inline /> | |
+| [CASL authorization](/auth/casl) | <Status value="in-progress" inline /> | ทำงานจริงบน users module แล้ว ยังไม่มี cache/เทส |
 | [Session ฝั่ง client](/frontend/auth-client) | <Status value="planned" inline /> | |
 | [สิทธิ์บน UI](/frontend/permissions-client) | <Status value="planned" inline /> | |
 | [ส่งอีเมล](/backend/email) | <Status value="planned" inline /> | |
@@ -117,16 +117,15 @@ status: implemented
 
 | # | เรื่อง | อยู่ที่ | ทำไมต้องแก้ |
 | --- | --- | --- | --- |
-| 1 | `POST /users` เปิด public ไม่มี guard | `apps/api/src/users/users.controller.ts` | ใครก็สร้างบัญชีได้ ต้องปิดหรือทำให้เป็น signup flow ที่ตั้งใจ ดู [สมัครสมาชิก](/auth/signup) |
-| 2 | `enableCors()` เปล่า = อนุญาตทุก origin | `apps/api/src/main.ts` | ต้องเป็น allowlist ก่อนขึ้น production |
-| 3 | refresh token ใช้ซ้ำได้ไม่จำกัด | `apps/api/src/auth/auth.service.ts` | ต้องทำ rotation + reuse detection ดู [JWT & refresh rotation](/auth/tokens) |
-| 4 | seed พังผ่าน `prisma db seed` | `apps/api/prisma.config.ts` สั่ง `tsx` แต่ไม่มี `tsx` ใน deps | ทำให้คำสั่งมาตรฐานของ Prisma ใช้ไม่ได้ |
-| 5 | ไม่ validate env ตอนบูต | `apps/api/src/app.module.ts` | ตั้ง env ผิดจะไประเบิดตอน runtime แทนที่จะตายตั้งแต่บูต ดู [Config](/platform/config) |
-| 6 | `defaultLocale` ของ web เป็น `en` | `apps/web/src/i18n/routing.ts` | ขัดกับ [ADR-0011](/adr/0011-thai-default-locale) ที่ตกลงว่าไทยเป็นหลัก |
-| 7 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
-| 8 | ไม่มี test สักไฟล์ | ทั้ง repo | `vitest` เป็น devDependency และ `turbo test` มีอยู่ แต่ไม่มีไฟล์เทส |
-| 9 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
-| 10 | `button.tsx` เขียนเองไม่ใช่ของ shadcn | `apps/web/src/components/ui/button.tsx` | ไม่มี Radix, ไม่มี `asChild`, ใช้ token `bg-brand-600` ที่ไม่มีนิยาม ดู [ระบบ UI](/frontend/ui-system) |
+| 1 | `enableCors()` เปล่า = อนุญาตทุก origin | `apps/api/src/main.ts` | ต้องเป็น allowlist ก่อนขึ้น production |
+| 2 | ไม่ validate env ตอนบูต | `apps/api/src/app.module.ts` | ตั้ง env ผิดจะไประเบิดตอน runtime แทนที่จะตายตั้งแต่บูต ดู [Config](/platform/config) |
+| 3 | `defaultLocale` ของ web เป็น `en` | `apps/web/src/i18n/routing.ts` | ขัดกับ [ADR-0011](/adr/0011-thai-default-locale) ที่ตกลงว่าไทยเป็นหลัก |
+| 4 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
+| 5 | ไม่มี test สักไฟล์ | ทั้ง repo | `vitest` เป็น devDependency และ `turbo test` มีอยู่ แต่ไม่มีไฟล์เทส |
+| 6 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
+| 7 | `button.tsx` เขียนเองไม่ใช่ของ shadcn | `apps/web/src/components/ui/button.tsx` | ไม่มี Radix, ไม่มี `asChild`, ใช้ token `bg-brand-600` ที่ไม่มีนิยาม ดู [ระบบ UI](/frontend/ui-system) |
+| 8 | `JwtAuthGuard` ไม่แยก expired จาก invalid | `apps/api/src/auth/jwt-auth.guard.ts` | ยังเป็น `AuthGuard("jwt")` เปล่า — client รีเฟรชเงียบ ๆ ไม่ได้ ต้องเตะผู้ใช้ออกทุก 15 นาที ดู [JWT & rotation](/auth/tokens) |
+| 9 | access/refresh token ไม่ตรวจ `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | token จากระบบอื่นที่แชร์ secret กันจะถูกยอมรับ |
 | 11 | ไม่มี script `typecheck` ที่ไหนเลย | ทุก `package.json` ในโปรเจกต์ | type error หลุดไปได้โดยไม่มีอะไรจับ ดู [Lint, format & type-check](/quality/code-quality) |
 | 12 | ไม่มี production Dockerfile/compose | `infra/docker/**`, root | มีแค่ dev stack ใช้งานจริงไม่ได้จนกว่าจะมี image สำหรับ production ดู [Docker & Traefik](/ops/docker-traefik) |
 

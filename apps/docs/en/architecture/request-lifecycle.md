@@ -1,12 +1,12 @@
 ---
 title: Request lifecycle
-status: planned
-statusNote: the Nest pipeline only has ZodValidationPipe and JwtAuthGuard
+status: in-progress
+statusNote: the Nest pipeline (middleware → guard → pipe → filter) is real now — interceptors and the client side are still missing
 ---
 
 # Request lifecycle
 
-<Status value="planned" />
+<Status value="in-progress" note="the Nest pipeline is real now — interceptors and the client side are still missing" />
 
 Follow one request from click to pixel, on both the happy and the failure path. This is where [contracts](/en/conventions/contract-first), the [error envelope](/en/conventions/errors), and the [trace id](/en/platform/trace-id) meet.
 
@@ -185,10 +185,10 @@ The single exception is the `Errors.*` helper, which pins `HttpStatus` at constr
 ::: warning Current code status
 | Layer | Code today |
 | --- | --- |
-| Middleware | none at all |
-| Guards | `JwtAuthGuard` exists but is opt-in per route; no `PoliciesGuard` |
-| Interceptors | none |
+| Middleware | `TraceIdMiddleware` is real, covers every route ✅ |
+| Guards | `JwtAuthGuard` + `PoliciesGuard` are both global (`APP_GUARD`) with `@Public()` support ✅ |
+| Interceptors | none yet (timing/cache) |
 | Pipes | global `ZodValidationPipe` ✅ |
-| Filters | none — Nest's default error handler |
-| Client side | no `api-client`, no refresh interceptor; `providers.tsx` has a bare `QueryClient` |
+| Filters | `AllExceptionsFilter`, global ✅ |
+| Client side | no `api-client`, no refresh interceptor; `providers.tsx` has a bare `QueryClient` — out of scope for this round, tied to [ADR-0006](/en/adr/0006-token-storage-httponly-cookie) |
 :::

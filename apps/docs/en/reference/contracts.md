@@ -1,12 +1,12 @@
 ---
 title: Contract schema catalog
 status: in-progress
-statusNote: the schemas that exist match the code, but only the api side uses them, and some schemas other pages reference don't exist yet
+statusNote: the schemas that exist match the code, including error.schema.ts and ability.schema.ts now — but only the api side uses any of them
 ---
 
 # Contract schema catalog
 
-<Status value="in-progress" note="everything below is real, but web doesn't import it yet and some files are missing" />
+<Status value="in-progress" note="all 5 files are real now, but web doesn't import any of it yet" />
 
 Every schema actually exported from `packages/contracts/src` today — how to use them and the rules for changing one live at [Contract-first](/en/conventions/contract-first). This page is just a catalog, verifiable against the source.
 
@@ -16,9 +16,11 @@ Every schema actually exported from `packages/contracts/src` today — how to us
 export * from "./common.schema";
 export * from "./user.schema";
 export * from "./auth.schema";
+export * from "./error.schema";
+export * from "./ability.schema";
 ```
 
-Everything imported from `@app-platform/contracts` comes from these three files.
+Everything imported from `@app-platform/contracts` comes from these five files.
 
 ## `common.schema.ts`
 
@@ -67,23 +69,40 @@ There's no `PATCH /users/:id` in `UsersController` today — the schema exists b
 `/auth/login` and `/auth/refresh` used to be two separate endpoints with their own free-form camelCase JSON, matching no particular spec. They're now one `POST /auth/token` following the OAuth2 grant flow, so Swagger UI's **Authorize → oauth2 (password)** button can fetch tokens for you (see [OpenAPI / Swagger](/en/backend/openapi)) — the trade-off is the body must be `application/x-www-form-urlencoded` with RFC-named fields instead of camelCase.
 :::
 
+## `error.schema.ts`
+
+| Name | Kind | Shape |
+| --- | --- | --- |
+| `ErrorDetailSchema` | schema | `{ field: string \| null, code: string, message: string }` |
+| `ErrorDetail` | type | `z.infer<typeof ErrorDetailSchema>` |
+| `ErrorEnvelopeSchema` | schema | `{ code: string, message: string, traceId: string, timestamp: ISO datetime, path: string, details: ErrorDetail[] (default []) }` |
+| `ErrorEnvelope` | type | `z.infer<typeof ErrorEnvelopeSchema>` |
+
+Matches the spec at [Error envelope](/en/conventions/errors) field for field — `AllExceptionsFilter` really builds this object for every error response.
+
+## `ability.schema.ts`
+
+| Name | Kind | Shape |
+| --- | --- | --- |
+| `ACTIONS` | const array | `["manage", "create", "read", "update", "delete"]` |
+| `SUBJECTS` | const array | `["all", "User", "Role", "Permission", "AuditLog", "File"]` |
+| `AppAction` / `AppSubject` | type | union of the values in `ACTIONS`/`SUBJECTS` |
+| `RawRuleSchema` | schema | `{ action, subject, fields?: string[], conditions?: Record<string, ...>, inverted?: boolean, reason?: string }` — `conditions` allows only `$eq`/`$ne`/`$in`/`$nin` via `.strict()` |
+| `RawRule` | type | `z.infer<typeof RawRuleSchema>` |
+| `AbilityRulesSchema` | schema | `z.array(RawRuleSchema)` — the shape of the `rules` array `GET /auth/me` returns |
+
 ## Who actually uses these
 
 | Side | How |
 | --- | --- |
-| `apps/api` | Every DTO on `AuthController`/`UsersController` extends `createZodDto(<Schema>)` from `nestjs-zod` — see `apps/api/src/auth/dto/login.dto.ts` and `apps/api/src/users/dto/create-user.dto.ts` |
+| `apps/api` | Every DTO on `AuthController`/`UsersController` extends `createZodDto(<Schema>)` from `nestjs-zod` — see `apps/api/src/auth/dto/token-request.dto.ts` and `apps/api/src/users/dto/create-user.dto.ts`. `AllExceptionsFilter` builds an `ErrorEnvelope` for every error, and `AbilityFactory` runs `AbilityRulesSchema.parse(...)` every time it builds an ability |
 | `apps/web` | **Doesn't import any of these yet** — web forms aren't validated with the shared zod schemas. See [Contract-first § How web uses it](/en/conventions/contract-first) for the target pattern |
-
-## Schemas other specs reference that don't exist here yet
-
-- `ErrorEnvelopeSchema`, `ErrorDetailSchema` — spec'd at [Error envelope](/en/conventions/errors), but `error.schema.ts` hasn't been created in `packages/contracts/src`
-- The CASL ability schema/type — described in [CASL authorization](/en/auth/casl) as `packages/contracts/src/ability.schema.ts`, but that file doesn't exist yet
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `error.schema.ts` for the error envelope | File doesn't exist |
-| `ability.schema.ts` for CASL | File doesn't exist |
+| `error.schema.ts` for the error envelope | ✅ |
+| `ability.schema.ts` for CASL | ✅ |
 | web imports and uses these schemas for form validation | No import from `@app-platform/contracts` anywhere in `apps/web` |
 | `paginatedSchema()` used by at least one real endpoint | No endpoint returns a paginated list yet |
 :::
