@@ -23,3 +23,8 @@ export const TokenResponseSchema = z.object({
   refresh_token: z.string(),
 });
 export type TokenResponse = z.infer<typeof TokenResponseSchema>;
+
+export const LogoutSchema = z.object({
+  refresh_token: z.string(),
+});
+export type Logout = z.infer<typeof LogoutSchema>;

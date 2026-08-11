@@ -1,14 +1,24 @@
 import { Injectable } from "@nestjs/common";
 import { createMongoAbility } from "@casl/ability";
-import { AbilityRulesSchema } from "@app-platform/contracts";
+import { AbilityRulesSchema, type RawRule } from "@app-platform/contracts";
 import { PrismaService } from "../../prisma/prisma.service";
+import { RedisService } from "../../redis/redis.service";
 import type { AppAbility } from "./ability.types";
+
+const CACHE_TTL_SECONDS = 300;
+const cacheKey = (userId: string) => `ability:${userId}`;
 
 @Injectable()
 export class AbilityFactory {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   async forUser(userId: string): Promise<AppAbility> {
+    const cached = await this.redis.getJSON<RawRule[]>(cacheKey(userId));
+    if (cached) return createMongoAbility<AppAbility>(AbilityRulesSchema.parse(cached));
+
     const rows = await this.prisma.permission.findMany({
       where: { roles: { some: { role: { users: { some: { userId } } } } } },
     });
@@ -24,6 +34,7 @@ export class AbilityFactory {
       })),
     );
 
+    await this.redis.setJSON(cacheKey(userId), rules, CACHE_TTL_SECONDS);
     return createMongoAbility<AppAbility>(rules);
   }
 }

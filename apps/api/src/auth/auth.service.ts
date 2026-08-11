@@ -9,6 +9,7 @@ import { UsersService } from "../users/users.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import { Errors } from "../common/errors/app.exception";
 import { getTraceId } from "../common/trace/trace-context";
+import { JWT_AUDIENCE, JWT_ISSUER } from "./jwt.constants";
 
 interface RequestMeta {
   userAgent?: string;
@@ -50,6 +51,16 @@ export class AuthService {
     return this.signAccessToken(user.id, user.email, rotated);
   }
 
+  async logout(refreshToken: string, userId: string): Promise<void> {
+    await this.refreshTokens.revoke(refreshToken);
+    this.logger.info({ traceId: getTraceId(), userId }, "logout");
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    await this.refreshTokens.revokeAllForUser(userId);
+    this.logger.info({ traceId: getTraceId(), userId }, "logout-all");
+  }
+
   private signAccessToken(userId: string, email: string, refreshToken: string): TokenResponse {
     const payload = { sub: userId, email };
     const accessToken = this.jwtService.sign(payload, {
@@ -58,6 +69,8 @@ export class AuthService {
         "JWT_ACCESS_EXPIRES_IN",
         "15m",
       ) as JwtSignOptions["expiresIn"],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     });
     const { exp, iat } = this.jwtService.decode<{ exp: number; iat: number }>(accessToken);
 

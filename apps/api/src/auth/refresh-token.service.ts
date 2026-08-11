@@ -46,6 +46,22 @@ export class RefreshTokenService {
     return uuidv7();
   }
 
+  /** revokes the single refresh token presented — used by logout */
+  async revoke(presented: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { tokenHash: hash(presented), revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /** revokes every family belonging to a user — used by logout-all and password change */
+  async revokeAllForUser(userId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   async rotate(presented: string, meta: TokenMeta) {
     const tokenHash = hash(presented);
 

@@ -1,12 +1,12 @@
 ---
 title: ภาพรวม auth
 status: in-progress
-statusNote: มีแค่ login ด้วยรหัสผ่านและ refresh แบบไม่มี rotation
+statusNote: login/refresh/logout/logout-all/me ทำงานจริง ยังไม่มี register/OAuth/email flow
 ---
 
 # ภาพรวม auth
 
-<Status value="in-progress" />
+<Status value="in-progress" note="login/refresh/logout/logout-all/me ทำงานจริง ยังไม่มี register/OAuth/email flow" />
 
 แผนที่ของทุก flow ที่เกี่ยวกับตัวตนและสิทธิ์ อ่านหน้านี้ก่อนแล้วค่อยเจาะหน้าที่ต้องการ
 
@@ -103,11 +103,10 @@ access token เพิกถอนไม่ได้ตามธรรมชา�
 
 | Method | Path | ต้อง auth | ทำอะไร | สถานะ |
 | --- | --- | --- | --- | --- |
-| `POST` | `/v1/auth/login` | — | อีเมล+รหัสผ่าน → token | <Status value="in-progress" inline /> |
-| `POST` | `/v1/auth/refresh` | refresh cookie | rotate แล้วคืนชุดใหม่ | <Status value="in-progress" inline /> |
-| `POST` | `/v1/auth/logout` | ✅ | เพิกถอน refresh ของเครื่องนี้ | <Status value="planned" inline /> |
-| `POST` | `/v1/auth/logout-all` | ✅ | เพิกถอนทุก session | <Status value="planned" inline /> |
-| `GET` | `/v1/auth/me` | ✅ | โปรไฟล์ + กฎ CASL | <Status value="planned" inline /> |
+| `POST` | `/auth/token` | — | `grant_type=password` (อีเมล+รหัสผ่าน) หรือ `refresh_token` → token | <Status value="implemented" inline /> |
+| `POST` | `/auth/logout` | ✅ | เพิกถอน refresh token ที่ส่งมา | <Status value="implemented" inline /> |
+| `POST` | `/auth/logout-all` | ✅ | เพิกถอนทุก session ของผู้ใช้ | <Status value="implemented" inline /> |
+| `GET` | `/auth/me` | ✅ | โปรไฟล์ + กฎ CASL | <Status value="implemented" inline /> |
 | `POST` | `/v1/auth/register` | — | สมัครด้วยรหัสผ่าน | <Status value="planned" inline /> |
 | `GET` | `/v1/auth/google` | — | เริ่ม OAuth | <Status value="planned" inline /> |
 | `GET` | `/v1/auth/google/callback` | — | รับ callback | <Status value="planned" inline /> |
@@ -161,11 +160,13 @@ XSS อันตรายกว่า CSRF มากเพราะรันโ�
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| 12 endpoint | มี 2: `POST /auth/login`, `POST /auth/refresh` |
-| refresh มี rotation + เพิกถอนได้ | `auth.service.ts` แค่ verify แล้วออกใหม่ token เดิมใช้ซ้ำได้ไม่จำกัด |
-| guard เป็น global + `@Public()` | opt-in ต่อ route — `POST /users` **เปิด public** |
-| authorization ด้วย CASL | ไม่มี `@casl/*` มีแค่ authn |
-| token อยู่ใน httpOnly cookie | API คืน token ใน body ยังไม่มีฝั่ง client |
-| throttle หน้า login | ไม่มี `@nestjs/throttler` |
+| 12 endpoint | มี 4: `POST /auth/token` (login+refresh), `POST /auth/logout`, `POST /auth/logout-all`, `GET /auth/me` — ยังไม่มี register/OAuth/verify-email/forgot-password/reset-password |
+| refresh มี rotation + เพิกถอนได้ | ✅ `RefreshTokenService.rotate()` |
+| logout / logout-all เพิกถอน refresh token | ✅ `RefreshTokenService.revoke()` / `revokeAllForUser()` |
+| access token ตรวจ `issuer`/`audience` | ✅ เซ็นและ verify ด้วย `app-platform` / `app-platform-web` |
+| guard เป็น global + `@Public()` | ✅ `JwtAuthGuard` + `PoliciesGuard` เป็น `APP_GUARD` ทั้งคู่ |
+| authorization ด้วย CASL | ✅ `AbilityFactory` + `PoliciesGuard` แคชด้วย Redis ดู [CASL](/auth/casl) |
+| token อยู่ใน httpOnly cookie | API คืน token ใน body — ฝั่ง client เก็บใน `sessionStorage` ไม่ใช่ httpOnly cookie ตาม ADR-0006 ดู [Session ฝั่ง client](/frontend/auth-client) |
+| throttle หน้า login | ✅ `@nestjs/throttler` บน `POST /auth/token` |
 | `AuditLog` | ไม่มีตาราง |
 :::

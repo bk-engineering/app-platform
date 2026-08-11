@@ -1,12 +1,12 @@
 ---
 title: เข้าสู่ระบบ
 status: in-progress
-statusNote: endpoint มีแล้ว หน้าเว็บยังไม่มี
+statusNote: endpoint + หน้าเว็บมีแล้ว แต่เก็บ token ใน sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006
 ---
 
 # เข้าสู่ระบบ
 
-<Status value="in-progress" note="endpoint มี · หน้าเว็บยังไม่มี" />
+<Status value="in-progress" note="endpoint + หน้าเว็บมีแล้ว · เก็บ token ใน sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006" />
 
 ## สัญญา
 
@@ -279,12 +279,12 @@ const next = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashb
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| หน้า login | ไม่มี — `apps/web` มีแค่หน้า home |
-| route handler ตั้ง cookie | ไม่มี |
+| หน้า login | ✅ `apps/web/src/app/[locale]/(auth)/login/page.tsx` — ฟอร์มพื้นฐานด้วย react-hook-form + zod เท่านั้น ยังไม่มีปุ่ม Google, ลิงก์ลืมรหัสผ่าน, resend verification, หรือ locale switcher ตามสเปกหน้าเว็บด้านบน |
+| route handler ตั้ง cookie | ไม่มี — client ยิงตรงไป API แล้วเก็บ token ใน `sessionStorage` ผ่าน `apps/web/src/lib/session.ts` ดู [Session ฝั่ง client](/frontend/auth-client) |
 | bcrypt.compare เผาเวลาเท่ากัน | `auth.service.ts` return ทันทีเมื่อไม่พบ user — **วัดเวลาแล้วรู้ว่าอีเมลไหนมีอยู่** |
 | ตรวจสถานะบัญชีและการยืนยันอีเมล | ไม่มีคอลัมน์เหล่านั้นใน schema |
-| throttle | ไม่มี `@nestjs/throttler` |
-| access token มี `roles` | payload มีแค่ `sub` กับ `email` |
+| throttle | ✅ `@Throttle({ auth: { limit: 5, ttl: 60_000 } })` บน `POST /auth/token` — ยังไม่ได้แยก tracker เป็น (IP + อีเมล) ตามที่หัวข้อ "จำกัดอัตรา" แนะนำ |
+| access token มี `roles` | payload มีแค่ `sub` กับ `email` — ตั้งใจ ดู [JWT & rotation § สถานะโค้ดปัจจุบัน](/auth/tokens) |
 | `AuditLog` | ไม่มีตาราง |
 | route อยู่ใต้ `/v1` | เป็น `POST /auth/token` (grant_type=password) — รวม login กับ refresh เป็น endpoint เดียวตาม OAuth2 เพื่อให้ Swagger UI auto-attach token ได้ ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
 :::

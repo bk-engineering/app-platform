@@ -30,5 +30,10 @@
   "ErrorPage": {
     "title": "Something went wrong",
     "retry": "Try again"
+  },
+  "ForbiddenState": {
+    "title": "You don't have access to this page",
+    "description": "Contact an administrator if you think this is a mistake.",
+    "backToHome": "Back to home"
   }
 }

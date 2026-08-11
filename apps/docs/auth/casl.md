@@ -1,12 +1,12 @@
 ---
 title: CASL authorization
-status: in-progress
-statusNote: AbilityFactory + PoliciesGuard ทำงานจริงแล้ว บน users module — ยังไม่มี cache, ยังไม่มี Prisma client extension, ยังไม่มีเทส
+status: implemented
+statusNote: AbilityFactory + PoliciesGuard ทำงานจริงบน users module แคชด้วย Redis (TTL 5 นาที) และมีเทสแล้ว — ยังไม่มี Prisma client extension
 ---
 
 # CASL authorization
 
-<Status value="in-progress" note="ทำงานจริงบน users module แล้ว — ยังไม่มี cache/Prisma extension/เทส" />
+<Status value="implemented" note="ทำงานจริงบน users module · แคช Redis (TTL 5 นาที) + เทสแล้ว — ยังไม่มี Prisma client extension" />
 
 > **ability ชุดเดียว บังคับที่ server ใช้ซ้ำที่ UI**
 
@@ -133,10 +133,22 @@ function interpolate(conditions: unknown, ctx: { user: { id: string } }): Record
 
 ### แคช
 
-`forUser()` ยิง DB ทุก request ซึ่งไม่ไหวถ้าโหลดสูง แคชได้ใน Redis ด้วย key `ability:<userId>` TTL 5 นาที และ **ต้องล้างทันที** เมื่อ role ของผู้ใช้เปลี่ยนหรือ permission ของ role นั้นเปลี่ยน
+`forUser()` แคชกฎ (ไม่ใช่ instance ของ `AppAbility` — ฟังก์ชันไม่ใช่ JSON) ใน Redis ด้วย key `ability:<userId>` TTL 5 นาที ผ่าน `RedisService.getJSON`/`setJSON` เมื่อ `REDIS_URL` ไม่ได้ตั้งหรือ Redis ล่ม `getJSON` คืน `null` เสมอ ระบบจึงยิง DB ทุก request แทนแบบเดิม ไม่ใช่ error
+
+```ts
+async forUser(userId: string): Promise<AppAbility> {
+  const cached = await this.redis.getJSON<RawRule[]>(`ability:${userId}`);
+  if (cached) return createMongoAbility<AppAbility>(AbilityRulesSchema.parse(cached));
+
+  const rows = await this.prisma.permission.findMany({ /* … */ });
+  const rules = /* … */;
+  await this.redis.setJSON(`ability:${userId}`, rules, 300);
+  return createMongoAbility<AppAbility>(rules);
+}
+```
 
 ::: warning แคชสิทธิ์คือแคชที่พลาดไม่ได้
-แคชสิทธิ์ค้างแปลว่าคนที่เพิ่งถูกถอดสิทธิ์ยังทำได้ต่ออีก 5 นาที ถ้าจะแคช การล้างต้องอยู่ใน transaction เดียวกับการเปลี่ยน role ถ้ายังไม่มั่นใจ อย่าเพิ่งแคช — ยิง DB ทุก request ยังถูกกว่าการให้สิทธิ์ผิด
+แคชสิทธิ์ค้างแปลว่าคนที่เพิ่งถูกถอดสิทธิ์ยังทำได้ต่ออีกจนกว่า TTL จะหมด (สูงสุด 5 นาที) วันนี้ **ยังไม่มีการล้างแคชทันที** เมื่อ role หรือ permission เปลี่ยน เพราะยังไม่มี endpoint ที่แก้ role/permission ของผู้ใช้เลย (ไม่มี `PATCH /users/:id/roles`) — เมื่อ endpoint นั้นมีขึ้นมา **ต้องล้าง key `ability:<userId>` ในธุรกรรมเดียวกับการเปลี่ยน role** ก่อนที่ TTL 5 นาทีจะไม่พอ
 :::
 
 ## บังคับที่ server
@@ -327,7 +339,7 @@ describe("ability ของ manager", () => {
 | `accessibleBy` ในทุก query | ยังไม่ต้องใช้ — endpoint เดียวที่อ่านทีละแถวคือ `GET /users/:id` ใช้ instance check (`ability.can('read', subject(...))`) แทน เพราะไม่มี list endpoint ดู [ข้อตกลง API](/conventions/api-conventions) |
 | `GET /v1/auth/me` ส่ง rules | ✅ (route จริงคือ `GET /auth/me` ไม่มี `/v1` prefix ดู [ข้อตกลง API](/conventions/api-conventions)) |
 | ตาราง `Permission` | ✅ พร้อม seed เต็มตาม [RBAC](/auth/rbac-model) |
-| จำกัดระดับ field | ยังไม่มี endpoint ที่แก้ไข user ได้ (ไม่มี `PATCH /users/:id`) จึงยังพิสูจน์ field-level check ไม่ได้ในโค้ดจริง แม้ permission row จะมี `fields` เก็บไว้แล้ว |
-| แคช ability | ไม่ทำ — ยิง DB ทุก request ตามที่เอกสารแนะนำ |
-| เทส ability | ไม่มีไฟล์เทสในโปรเจกต์เลย |
+| จำกัดระดับ field | `PATCH /users/:id` มีแล้วและตรวจ instance-level (`ability.can("update", subject(...))`) แต่ **ยังไม่ตรวจทีละ field** ตามโค้ดตัวอย่างข้างบน — `UsersService.update()` ไม่มี loop ตรวจ `Object.keys(dto)` เลย แม้ permission row จะมี `fields` เก็บไว้แล้ว |
+| แคช ability | ✅ Redis, key `ability:<userId>`, TTL 5 นาที, fallback เป็น "ไม่มีแคช" เมื่อ Redis ไม่พร้อม — ยังไม่มีการล้างทันทีตอน role เปลี่ยนเพราะยังไม่มี endpoint แก้ role |
+| เทส ability | ✅ `apps/api/src/auth/ability/ability.factory.spec.ts` — ครอบคลุม cache hit/miss, interpolate `${user.id}`, field-level check, และ subject ที่ไม่มี permission row |
 :::

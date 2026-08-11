@@ -24,6 +24,12 @@ export const Errors = {
       "Refresh token was already used — the whole session family has been revoked",
       HttpStatus.UNAUTHORIZED,
     ),
+  tokenExpired: () =>
+    new AppException("AUTH_TOKEN_EXPIRED", "Access token expired", HttpStatus.UNAUTHORIZED),
+  tokenInvalid: () =>
+    new AppException("AUTH_TOKEN_INVALID", "Access token is invalid", HttpStatus.UNAUTHORIZED),
+  tokenMissing: () =>
+    new AppException("AUTH_TOKEN_MISSING", "No access token provided", HttpStatus.UNAUTHORIZED),
   emailTaken: () => new AppException("USER_EMAIL_TAKEN", "Email already registered", HttpStatus.CONFLICT),
   userNotFound: () => new AppException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND),
   forbidden: (action: string, subject: string) =>

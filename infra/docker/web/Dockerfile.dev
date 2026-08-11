@@ -4,14 +4,15 @@ RUN corepack enable && corepack prepare pnpm@11.18.0 --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml ./
+COPY .npmrc package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/docs/package.json ./apps/docs/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
 COPY packages/config/package.json ./packages/config/package.json
 
-RUN pnpm install
+# .npmrc raises fetch-timeout/retries and lowers network-concurrency for slow registry links
+RUN pnpm install --network-concurrency=6
 
 WORKDIR /app/apps/web
 

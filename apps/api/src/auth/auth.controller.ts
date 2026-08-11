@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
@@ -7,6 +7,7 @@ import { Public } from "../common/decorators/public.decorator";
 import type { AuthenticatedRequest } from "../common/types/authenticated-request";
 import { AuthService } from "./auth.service";
 import { TokenRequestDto, TokenResponseDto } from "./dto/token-request.dto";
+import { LogoutDto } from "./dto/logout.dto";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -38,5 +39,23 @@ export class AuthController {
       // raw rules, not pre-baked booleans — the client decides what to ask
       rules: req.ability.rules,
     };
+  }
+
+  @ApiBearerAuth("access-token")
+  @ApiSecurity("oauth2")
+  @ApiErrorResponses()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("logout")
+  async logout(@Body() body: LogoutDto, @Req() req: AuthenticatedRequest) {
+    await this.authService.logout(body.refresh_token, req.user!.id);
+  }
+
+  @ApiBearerAuth("access-token")
+  @ApiSecurity("oauth2")
+  @ApiErrorResponses()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post("logout-all")
+  async logoutAll(@Req() req: AuthenticatedRequest) {
+    await this.authService.logoutAll(req.user!.id);
   }
 }

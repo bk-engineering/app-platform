@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { setUserId } from "../../common/trace/trace-context";
+import { JWT_AUDIENCE, JWT_ISSUER } from "../jwt.constants";
 
 export interface JwtPayload {
   sub: string;
@@ -16,6 +17,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>("JWT_ACCESS_SECRET"),
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
     });
   }
 

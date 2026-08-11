@@ -1,11 +1,16 @@
 ---
 title: Session ฝั่ง client
-status: planned
+status: in-progress
+statusNote: session/use-session/single-flight refresh ทำงานจริง แต่เป็น sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006
 ---
 
 # Session ฝั่ง client
 
-<Status value="planned" />
+<Status value="in-progress" note="session/use-session/single-flight refresh ทำงานจริง · sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006" />
+
+::: warning ทำไมสถานะยังเป็น in-progress ไม่ใช่ implemented
+เอกสารหน้านี้เลือก httpOnly cookie ([ADR-0006](/adr/0006-token-storage-httponly-cookie)) แต่โค้ดจริงเก็บ token ใน `sessionStorage` และแนบ `Authorization: Bearer` เอง (`apps/web/src/lib/api-client.ts`) — ไม่มี route handler `/api/auth/*` และไม่มี CSRF token เพราะไม่มี cookie ให้ป้องกัน สิ่งที่ implement ตรงสเปกแล้วคือ single-flight refresh และการแยก `AUTH_TOKEN_EXPIRED`/`AUTH_TOKEN_INVALID` ฝั่ง API (ดู [JWT & rotation](/auth/tokens)) — แต่ client ยัง retry แบบ blind บน 401 ทุกชนิด ไม่ได้เช็ค code ก่อนตัดสินใจ refresh
+:::
 
 เบราว์เซอร์เก็บ session ยังไง ต่ออายุยังไง และป้องกัน route ยังไง
 
@@ -306,12 +311,12 @@ export async function POST() {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| route handler `/api/auth/*` | ไม่มีโฟลเดอร์ `app/api/` เลย |
-| `api-client` + single-flight refresh | ไม่มีไฟล์ |
-| ป้องกัน route ใน `proxy.ts` | มีแต่ middleware ของ next-intl |
-| `useSession` + ability | ไม่มี |
-| CSRF token | ไม่มี |
-| `QueryClient` ตั้ง default | `providers.tsx` สร้าง `new QueryClient()` เปล่า ๆ ไม่ตั้ง `staleTime` หรือ `retry` |
-| prefetch ฝั่ง server + hydrate | ไม่มี |
-| API คืน token เป็น cookie | API คืน token ใน body ยังไม่มีใครแปลงเป็น cookie |
+| route handler `/api/auth/*` ตั้ง httpOnly cookie | ไม่มี — client ยิงตรงไป API ด้วย `Authorization: Bearer` แทน (`apps/web/src/lib/api-client.ts`) |
+| `api-client` + single-flight refresh | ✅ `refreshInFlight` promise เดียวกันสำหรับ 401 ที่มาพร้อมกัน — แต่ retry ทุก 401 ไม่ได้แยก `AUTH_TOKEN_EXPIRED` ก่อน |
+| ป้องกัน route ใน `proxy.ts` | มีแต่ middleware ของ next-intl — ยังไม่เช็ค session ก่อน redirect ไป login |
+| `useSession` + ability | ✅ `apps/web/src/hooks/use-session.ts` (`useSyncExternalStore` บน `sessionStorage`) แยกจาก `useAbility()` ใน `apps/web/src/lib/ability-context.tsx` (สเปกนี้รวมสองอย่างไว้ในฮุกเดียว) |
+| CSRF token | ไม่ต้องมี — ไม่มี cookie ให้ CSRF โจมตี, token อยู่ใน `sessionStorage` และแนบผ่าน header เอง |
+| `QueryClient` ตั้ง default | ✅ `providers.tsx` ตั้ง `retry` ให้ข้าม `ApiError` ที่ผ่านการ refresh มาแล้ว |
+| prefetch ฝั่ง server + hydrate | ไม่มี — ทุกอย่างเป็น client-side fetch |
+| API คืน token เป็น cookie | API คืน token ใน body — `sessionStorage` เก็บไว้ ไม่มีใครแปลงเป็น cookie |
 :::

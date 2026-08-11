@@ -21,6 +21,28 @@ export class RedisService implements OnModuleDestroy {
     await this.client.ping();
   }
 
+  // caching is an optimization, not a correctness requirement — a Redis hiccup falls
+  // back to "no cache" (get: null, set/del: no-op) rather than breaking the caller
+  private async safely<T>(fn: (client: Redis) => Promise<T>): Promise<T | undefined> {
+    if (!this.client) return undefined;
+    try {
+      if (this.client.status === "wait") await this.client.connect();
+      return await fn(this.client);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** returns null on cache miss, when Redis isn't configured, or on a Redis error */
+  async getJSON<T>(key: string): Promise<T | null> {
+    const raw = await this.safely((client) => client.get(key));
+    return raw ? (JSON.parse(raw) as T) : null;
+  }
+
+  async setJSON(key: string, value: unknown, ttlSeconds: number): Promise<void> {
+    await this.safely((client) => client.set(key, JSON.stringify(value), "EX", ttlSeconds));
+  }
+
   async onModuleDestroy() {
     await this.client?.quit();
   }

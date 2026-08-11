@@ -1,12 +1,12 @@
 ---
 title: JWT & refresh rotation
 status: implemented
-statusNote: rotation + reuse detection ทำงานจริงแล้ว เหลือแค่ logout/logout-all และ issuer/audience check
+statusNote: rotation + reuse detection + logout/logout-all + issuer/audience check ทำงานจริงแล้ว
 ---
 
 # JWT & refresh rotation
 
-<Status value="implemented" note="rotation + reuse detection ทำงานจริงแล้ว เหลือ logout/logout-all" />
+<Status value="implemented" note="rotation + reuse detection + logout/logout-all + issuer/audience check ทำงานจริงแล้ว" />
 
 ## ปัญหาของ refresh token ที่ไม่ rotate
 
@@ -303,10 +303,10 @@ WHERE expires_at < now() - interval '30 days';
 | ตาราง `RefreshToken` เก็บ hash + family | ✅ |
 | rotate ทุกครั้งที่ refresh | ✅ |
 | จับการใช้ซ้ำ → เพิกถอนทั้ง family | ✅ (ดู `RefreshTokenService.rotate()` — ต้อง revoke แล้วค่อย throw **นอก** `$transaction` ไม่งั้นการเพิกถอนจะถูก rollback ไปพร้อมกับ error ที่โยนออกมา ซึ่งเป็นบั๊กที่พบตอน implement จากโค้ดตัวอย่างเดิมในหน้านี้) |
-| logout / logout-all | ยังไม่มี endpoint |
+| logout / logout-all | ✅ `POST /auth/logout` เพิกถอนใบเดียว, `POST /auth/logout-all` เพิกถอนทุกใบของผู้ใช้ (`RefreshTokenService.revoke()` / `revokeAllForUser()`) |
 | refresh token เป็น random ไม่ใช่ JWT | ✅ `randomBytes(32).toString("base64url")` — `JWT_REFRESH_SECRET` เลิกใช้แล้ว ดู [Environment variables](/reference/env-vars) |
-| ตรวจ `issuer` / `audience` | ยังไม่ได้ตั้งทั้งตอนเซ็นและตอน verify |
-| แยก expired ออกจาก invalid | `JwtAuthGuard` ยังเป็น `AuthGuard("jwt")` เปล่า ๆ ได้ 401 เหมือนกันหมด |
+| ตรวจ `issuer` / `audience` | ✅ เซ็นด้วย `issuer: "app-platform"`, `audience: "app-platform-web"` ใน `auth.service.ts` และตรวจค่าเดียวกันใน `jwt.strategy.ts` |
+| แยก expired ออกจาก invalid | ✅ `JwtAuthGuard.handleRequest()` แยก `TokenExpiredError` → `AUTH_TOKEN_EXPIRED`, `JsonWebTokenError` → `AUTH_TOKEN_INVALID`, ไม่มี token เลย → `AUTH_TOKEN_MISSING` |
 | guard เป็น global + `@Public()` | ✅ `JwtAuthGuard` + `PoliciesGuard` เป็น `APP_GUARD` ทั้งคู่, `POST /users` ต้อง auth (manager ขึ้นไป) แล้ว |
 | route แยก `/auth/login` + `/auth/refresh` | รวมเป็น `POST /auth/token` เดียวตาม OAuth2 grant (`grant_type=password` \| `refresh_token`) — ดู [OpenAPI § OAuth2 password flow](/backend/openapi) |
 | access token มี `roles` | payload มีแค่ `sub` กับ `email` — ไม่จำเป็นสำหรับ CASL เพราะ `AbilityFactory` คำนวณสิทธิ์จาก DB สดทุกครั้งอยู่แล้ว ไม่ได้อ่านจาก JWT |

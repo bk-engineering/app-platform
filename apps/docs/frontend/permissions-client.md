@@ -1,11 +1,12 @@
 ---
 title: สิทธิ์บน UI
-status: planned
+status: implemented
+statusNote: AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้า settings/users — ยังไม่มีเมนูให้กรอง
 ---
 
 # สิทธิ์บน UI
 
-<Status value="planned" />
+<Status value="implemented" note="AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้า settings/users" />
 
 ::: danger อ่านก่อนอย่างอื่น
 ทุกอย่างในหน้านี้คือ **ประสบการณ์ผู้ใช้ ไม่ใช่ความปลอดภัย** `<Can>` ซ่อนปุ่ม ไม่ได้ป้องกันอะไร ใครก็เปิด devtools แล้วยิง API ตรงได้ ความปลอดภัยอยู่ที่ [guard ฝั่ง server](/auth/casl) เสมอและเท่านั้น
@@ -40,30 +41,36 @@ prefetch ฝั่ง server ทำให้ HTML ชุดแรกถูกต
 
 ## Provider
 
+`@casl/react` v7 มี `AbilityProvider`/`useAbility`/`Can` ให้ใช้ตรง ๆ (เวอร์ชันก่อนหน้าต้องประกอบเองด้วย `createContextualCan` ตามที่เอกสารรุ่นก่อนแนะนำ) โค้ดจริงจึงห่อ provider ของ library อีกชั้นแทนที่จะสร้าง context เอง
+
 ```tsx
 // apps/web/src/lib/ability-context.tsx
 "use client";
-import { createContextualCan } from "@casl/react";
-import { createMongoAbility } from "@casl/ability";
-import { AbilityRulesSchema } from "@app-platform/contracts";
+import { AbilityProvider as CaslAbilityProvider, Can, useAbility as useCaslAbility } from "@casl/react";
+import { buildAbility, type AppAbility } from "./ability";
 
-export const AbilityContext = createContext<AppAbility>(createMongoAbility([]));
-export const Can = createContextualCan(AbilityContext.Consumer);
+export { Can };
+const EMPTY_ABILITY = buildAbility([]); // ไม่มีข้อมูล = ไม่มีสิทธิ์ ไม่ใช่มีทุกสิทธิ์
+export const useAbility = () => useCaslAbility<AppAbility>();
 
 export function AbilityProvider({ children }: { children: ReactNode }) {
-  const { data } = useQuery({ queryKey: sessionKeys.me, queryFn: fetchMe, staleTime: 5 * 60_000 });
+  const session = useSession();
+  const me = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: getMe,
+    enabled: session !== null,
+    staleTime: 5 * 60_000,
+  });
 
-  const ability = useMemo(
-    // ไม่มีข้อมูล = ไม่มีสิทธิ์ ไม่ใช่มีทุกสิทธิ์
-    () => createMongoAbility(data ? AbilityRulesSchema.parse(data.rules) : []),
-    [data],
-  );
+  const ability = useMemo(() => (me.data ? buildAbility(me.data.rules) : EMPTY_ABILITY), [me.data]);
 
-  return <AbilityContext.Provider value={ability}>{children}</AbilityContext.Provider>;
+  return <CaslAbilityProvider value={ability}>{children}</CaslAbilityProvider>;
 }
-
-export const useAbility = () => useContext(AbilityContext);
 ```
+
+::: tip ยังเป็น client fetch ไม่ใช่ server prefetch
+sequence diagram ด้านบนสมมุติว่า `(app)/layout.tsx` เป็น Server Component ที่ prefetch `GET /auth/me` แล้ว dehydrate เข้า `HydrationBoundary` — โค้ดจริงยังไม่มีสิ่งนั้น `AbilityProvider` ยิง `useQuery` ฝั่ง client เท่านั้น จึงมีจังหวะที่ ability เป็นค่าว่าง (ปฏิเสธทุกอย่าง) สั้น ๆ ระหว่างโหลดหน้าแรก — หน้าที่ gate ด้วย ability ต้องเช็ค `isPending` ก่อนเสมอ ดู [ป้องกันทั้งหน้า](#ป้องกันทั้งหน้า)
+:::
 
 ::: danger ค่าเริ่มต้นต้องเป็น "ไม่มีสิทธิ์"
 `createMongoAbility([])` ปฏิเสธทุกอย่าง ถ้าตั้งค่าเริ่มต้นเป็น "อนุญาต" ระหว่างที่ยังโหลด rules ไม่เสร็จ ผู้ใช้จะเห็นปุ่มที่ไม่ควรเห็นแวบหนึ่ง แล้วกดแล้วเจอ `403` ซึ่งอ่านเหมือนบั๊ก
@@ -227,10 +234,11 @@ it("แสดงปุ่มลบสำหรับ manager", () => {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `@casl/ability` + `@casl/react` | **ไม่ได้ติดตั้ง** |
-| `AbilityProvider` + `<Can>` | ไม่มี |
-| `GET /v1/auth/me` ส่ง rules | ไม่มี endpoint ดู [CASL](/auth/casl) |
-| เมนูกรองตามสิทธิ์ | ไม่มีเมนู — `apps/web` มีแค่หน้า home |
-| `<ForbiddenState />` | ไม่มี ยังไม่มี component ของ shadcn นอกจาก `button.tsx` |
-| เทส | ไม่มีเครื่องมือเทสใน `apps/web` เลย |
+| `@casl/ability` + `@casl/react` | ✅ ทั้งคู่ติดตั้งแล้ว |
+| `AbilityProvider` + `<Can>` | ✅ `apps/web/src/lib/ability-context.tsx` ห่อ `@casl/react` v7 (ไม่ได้ประกอบ context เอง) ต่อเข้ากับ `providers.tsx` |
+| `GET /auth/me` ส่ง rules | ✅ ดู [CASL](/auth/casl) (route จริงไม่มี `/v1` prefix) |
+| เมนูกรองตามสิทธิ์ | ไม่มีเมนู — `apps/web` ยังไม่มี nav component |
+| `<ForbiddenState />` | ✅ `apps/web/src/components/forbidden-state.tsx` ใช้กรองหน้า `settings/users` ด้วย `ability.cannot("read","User")` |
+| server prefetch + hydrate | ไม่มี — `AbilityProvider` ยิง `useQuery` ฝั่ง client เท่านั้น |
+| เทส | ไม่มีเครื่องมือเทสใน `apps/web` เลย — เทส `<Can>`/ability ที่มีอยู่ตอนนี้เป็นฝั่ง API (`ability.factory.spec.ts`) เท่านั้น |
 :::

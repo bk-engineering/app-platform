@@ -46,17 +46,17 @@ status: implemented
 
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
-| [ภาพรวม auth](/auth/overview) | <Status value="in-progress" inline /> | |
-| [JWT & refresh rotation](/auth/tokens) | <Status value="implemented" inline /> | rotation + reuse detection ทำงานจริง เหลือ logout/logout-all |
-| [เข้าสู่ระบบ](/auth/login) | <Status value="in-progress" inline /> | endpoint มี · หน้าเว็บยังไม่มี |
-| [สมัครสมาชิก & Google OAuth](/auth/signup) | <Status value="planned" inline /> | `POST /users` ต้อง auth แล้ว (manager ขึ้นไป) แต่ยังไม่ใช่ self-signup flow · ไม่มี OAuth |
-| [ลืมรหัสผ่าน](/auth/forgot-password) | <Status value="planned" inline /> | |
-| [ยืนยันอีเมล](/auth/email-verification) | <Status value="planned" inline /> | |
+| [ภาพรวม auth](/auth/overview) | <Status value="in-progress" inline /> | login/refresh/logout/logout-all/me ทำงานจริง ยังไม่มี register/OAuth/email flow |
+| [JWT & refresh rotation](/auth/tokens) | <Status value="implemented" inline /> | rotation + reuse detection + logout/logout-all + issuer/audience check ทำงานจริง |
+| [เข้าสู่ระบบ](/auth/login) | <Status value="in-progress" inline /> | endpoint + หน้าเว็บมีแล้ว แต่เก็บ token ใน sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006 |
+| [สมัครสมาชิก & Google OAuth](/auth/signup) | <Status value="planned" inline /> | `POST /users` ต้อง auth แล้ว (manager ขึ้นไป) แต่ยังไม่ใช่ self-signup flow · ไม่มี OAuth (ต้องมี Google credentials) |
+| [ลืมรหัสผ่าน](/auth/forgot-password) | <Status value="planned" inline /> | ต้องมีผู้ให้บริการส่งอีเมล |
+| [ยืนยันอีเมล](/auth/email-verification) | <Status value="planned" inline /> | ต้องมีผู้ให้บริการส่งอีเมล |
 | [Role & permission model](/auth/rbac-model) | <Status value="implemented" inline /> | |
-| [CASL authorization](/auth/casl) | <Status value="in-progress" inline /> | ทำงานจริงบน users module แล้ว ยังไม่มี cache/เทส |
-| [Session ฝั่ง client](/frontend/auth-client) | <Status value="planned" inline /> | |
-| [สิทธิ์บน UI](/frontend/permissions-client) | <Status value="planned" inline /> | |
-| [ส่งอีเมล](/backend/email) | <Status value="planned" inline /> | |
+| [CASL authorization](/auth/casl) | <Status value="implemented" inline /> | ทำงานจริงบน users module · แคชด้วย Redis (TTL 5 นาที) + มีเทสแล้ว |
+| [Session ฝั่ง client](/frontend/auth-client) | <Status value="in-progress" inline /> | session/use-session/single-flight refresh ทำงานจริง แต่เป็น sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006 |
+| [สิทธิ์บน UI](/frontend/permissions-client) | <Status value="implemented" inline /> | `AbilityProvider`/`<Can>`/`ForbiddenState` ทำงานจริง ใช้กรองหน้า settings/users |
+| [ส่งอีเมล](/backend/email) | <Status value="planned" inline /> | ต้องมีผู้ให้บริการส่งอีเมล |
 
 ### แบ็กเอนด์
 
