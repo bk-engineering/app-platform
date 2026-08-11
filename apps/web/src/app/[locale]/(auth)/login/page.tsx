@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ type LoginForm = z.infer<typeof LoginFormSchema>;
 export default function LoginPage() {
   const t = useTranslations("LoginPage");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -32,7 +34,8 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await login(data.email, data.password);
-      router.push("/");
+      const next = searchParams.get("next");
+      router.push(next && next.startsWith("/") ? next : "/dashboard");
     } catch (error) {
       if (error instanceof ApiError && error.code === "AUTH_TOKEN_INVALID") {
         setFormError(t("invalidCredentials"));
