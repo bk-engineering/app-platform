@@ -1,11 +1,16 @@
 import { Controller, Get, HttpStatus, Res } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import type { Response } from "express";
 import { Public } from "./common/decorators/public.decorator";
 import { PrismaService } from "./prisma/prisma.service";
 import { RedisService } from "./redis/redis.service";
 
+// the "auth" bucket (5 req/60s) is meant for login attempts only — without this,
+// NestJS's multi-throttler applies every named bucket to every route by default,
+// so orchestrator healthchecks (which poll every few seconds) would start 429ing
 @ApiExcludeController()
+@SkipThrottle({ auth: true })
 @Controller("health")
 export class HealthController {
   constructor(

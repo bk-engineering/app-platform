@@ -20,7 +20,7 @@ export default async function LocaleLayout({
   if (!(routing.locales as readonly string[]).includes(locale)) notFound();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider>
           <Providers>{children}</Providers>

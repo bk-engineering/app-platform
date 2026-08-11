@@ -37,6 +37,12 @@ export class AbilityFactory {
     await this.redis.setJSON(cacheKey(userId), rules, CACHE_TTL_SECONDS);
     return createMongoAbility<AppAbility>(rules);
   }
+
+  /** call after a role's permissions change so holders don't keep stale cached rules for CACHE_TTL_SECONDS */
+  async invalidateForRole(roleId: string): Promise<void> {
+    const holders = await this.prisma.userRole.findMany({ where: { roleId }, select: { userId: true } });
+    await Promise.all(holders.map((h) => this.redis.del(cacheKey(h.userId))));
+  }
 }
 
 /** replaces "${user.id}" placeholders with the real value — only that one path is allowlisted */

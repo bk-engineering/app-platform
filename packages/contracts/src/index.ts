@@ -4,3 +4,6 @@ export * from "./auth.schema";
 export * from "./error.schema";
 export * from "./ability.schema";
 export * from "./health.schema";
+export * from "./role.schema";
+export * from "./dashboard.schema";
+export * from "./audit-log.schema";

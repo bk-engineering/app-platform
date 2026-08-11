@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { AbilityRulesSchema, TokenResponseSchema } from "@app-platform/contracts";
+import { AbilityRulesSchema, TokenResponseSchema, UserSchema } from "@app-platform/contracts";
 import { request } from "./api-client";
 import { clearSession, setSession } from "./session";
 
 export const MeResponseSchema = z.object({
-  user: z.object({ id: z.string(), email: z.string() }),
+  user: UserSchema,
   rules: AbilityRulesSchema,
 });
 export type MeResponse = z.infer<typeof MeResponseSchema>;

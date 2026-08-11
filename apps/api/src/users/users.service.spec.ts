@@ -7,6 +7,10 @@ function fakeLogger() {
   return { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } as never;
 }
 
+function fakeAuditLog() {
+  return { record: vi.fn().mockResolvedValue(undefined) } as never;
+}
+
 function fakeRepository(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> = {}) {
   return {
     findByEmail: vi.fn().mockResolvedValue(null),
@@ -29,10 +33,11 @@ describe("UsersService", () => {
         email: "a@b.com",
         displayName: "Ann",
         passwordHash: "hashed",
+        roles: [],
         createdAt: new Date("2026-01-01"),
       }),
     });
-    const service = new UsersService(repository as never, fakeLogger());
+    const service = new UsersService(repository as never, fakeAuditLog(), fakeLogger());
 
     const result = await service.create({ email: "a@b.com", displayName: "Ann", password: "password123" });
 
@@ -46,7 +51,7 @@ describe("UsersService", () => {
     const repository = fakeRepository({
       findByEmail: vi.fn().mockResolvedValue({ id: "existing" }),
     });
-    const service = new UsersService(repository as never, fakeLogger());
+    const service = new UsersService(repository as never, fakeAuditLog(), fakeLogger());
 
     await expect(
       service.create({ email: "a@b.com", displayName: "Ann", password: "password123" }),
@@ -55,7 +60,7 @@ describe("UsersService", () => {
 
   it("findVisible() returns 404-shaped error when the row doesn't exist", async () => {
     const repository = fakeRepository({ findById: vi.fn().mockResolvedValue(null) });
-    const service = new UsersService(repository as never, fakeLogger());
+    const service = new UsersService(repository as never, fakeAuditLog(), fakeLogger());
 
     await expect(service.findVisible("missing", readOwnAbility("u1"))).rejects.toMatchObject({
       code: "USER_NOT_FOUND",
@@ -64,9 +69,9 @@ describe("UsersService", () => {
 
   it("findVisible() returns 404-shaped error (not 403) when the ability forbids reading the row", async () => {
     const repository = fakeRepository({
-      findById: vi.fn().mockResolvedValue({ id: "someone-else", email: "x@y.com" }),
+      findById: vi.fn().mockResolvedValue({ id: "someone-else", email: "x@y.com", roles: [] }),
     });
-    const service = new UsersService(repository as never, fakeLogger());
+    const service = new UsersService(repository as never, fakeAuditLog(), fakeLogger());
 
     // ability only allows reading id "u1" — the row belongs to "someone-else"
     await expect(service.findVisible("someone-else", readOwnAbility("u1"))).rejects.toMatchObject({
@@ -81,9 +86,10 @@ describe("UsersService", () => {
         email: "a@b.com",
         displayName: "Ann",
         passwordHash: "hashed",
+        roles: [],
       }),
     });
-    const service = new UsersService(repository as never, fakeLogger());
+    const service = new UsersService(repository as never, fakeAuditLog(), fakeLogger());
 
     const result = await service.findVisible("u1", readOwnAbility("u1"));
 

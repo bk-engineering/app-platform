@@ -8,6 +8,9 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
+import { RolesModule } from "./roles/roles.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { AuditLogModule } from "./audit-log/audit-log.module";
 import { HealthController } from "./health.controller";
 import { ClientErrorsController } from "./common/client-errors/client-errors.controller";
 import { TraceIdMiddleware } from "./common/trace/trace-id.middleware";
@@ -51,6 +54,9 @@ import type { Env } from "./config/env.schema";
     RedisModule,
     AuthModule,
     UsersModule,
+    RolesModule,
+    DashboardModule,
+    AuditLogModule,
   ],
   controllers: [HealthController, ClientErrorsController],
   providers: [

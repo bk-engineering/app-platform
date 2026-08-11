@@ -34,4 +34,26 @@ export const Errors = {
   userNotFound: () => new AppException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND),
   forbidden: (action: string, subject: string) =>
     new AppException("AUTHZ_FORBIDDEN", `Not allowed to ${action} ${subject}`, HttpStatus.FORBIDDEN),
+  userLastAdmin: () =>
+    new AppException(
+      "USER_LAST_ADMIN",
+      "At least one admin must remain",
+      HttpStatus.CONFLICT,
+    ),
+  invalidCurrentPassword: () =>
+    new AppException(
+      "AUTH_INVALID_CURRENT_PASSWORD",
+      "Current password is incorrect",
+      HttpStatus.UNAUTHORIZED,
+    ),
+  roleNotFound: () => new AppException("ROLE_NOT_FOUND", "Role not found", HttpStatus.NOT_FOUND),
+  roleKeyTaken: () => new AppException("RESOURCE_CONFLICT", "Role key already in use", HttpStatus.CONFLICT),
+  roleInUse: (userCount: number) =>
+    new AppException(
+      "ROLE_IN_USE",
+      `Role is still assigned to ${userCount} user(s)`,
+      HttpStatus.CONFLICT,
+    ),
+  roleSystemImmutable: () =>
+    new AppException("ROLE_SYSTEM_IMMUTABLE", "System roles can't be deleted", HttpStatus.FORBIDDEN),
 };

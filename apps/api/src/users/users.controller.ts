@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { PaginationQuerySchema } from "@app-platform/contracts";
 import { createZodDto } from "nestjs-zod";
 import { CheckPolicies } from "../auth/ability/policies.guard";
@@ -11,7 +12,9 @@ import { UpdateUserDto } from "./dto/update-user.dto";
 
 class PaginationQueryDto extends createZodDto(PaginationQuerySchema) {}
 
+// the "auth" bucket (5 req/60s) is meant for login attempts only — see health.controller.ts
 @ApiTags("users")
+@SkipThrottle({ auth: true })
 @Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -50,6 +53,15 @@ export class UsersController {
   @ApiErrorResponses()
   @Patch(":id")
   update(@Param("id") id: string, @Body() body: UpdateUserDto, @Req() req: AuthenticatedRequest) {
-    return this.usersService.update(id, req.ability, body);
+    return this.usersService.update(id, req.ability, req.user!.id, body);
+  }
+
+  @ApiBearerAuth("access-token")
+  @ApiSecurity("oauth2")
+  @ApiErrorResponses()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(":id")
+  async delete(@Param("id") id: string, @Req() req: AuthenticatedRequest) {
+    await this.usersService.delete(id, req.ability, req.user!.id);
   }
 }
