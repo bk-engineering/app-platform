@@ -12,17 +12,18 @@ import { useAuditLog, useDashboardSummary } from "@/hooks/use-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function StatCard({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      {value === undefined ? (
-        <Skeleton className="mt-2 h-8 w-16" />
-      ) : (
-        <p className="mt-1 text-2xl font-semibold">{value}</p>
-      )}
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {value === undefined ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-semibold">{value}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -63,51 +64,52 @@ function ActivityWidget() {
   if (!canSeeActivity) return null;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{t("recentActivity")}</h2>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle className="text-sm font-semibold">{t("recentActivity")}</CardTitle>
         <Button size="icon" variant="ghost" aria-label={t("retry")} onClick={() => activity.refetch()}>
           <RefreshCw className="size-4" />
         </Button>
-      </div>
+      </CardHeader>
+      <CardContent>
+        {activity.isLoading && (
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        )}
 
-      {activity.isLoading && (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-5 w-full" />
-          ))}
-        </div>
-      )}
+        {activity.isError && (
+          <div className="text-sm">
+            <p className="mb-2 text-destructive">{t("activityError")}</p>
+            <Button size="sm" variant="outline" onClick={() => activity.refetch()}>
+              {t("retry")}
+            </Button>
+          </div>
+        )}
 
-      {activity.isError && (
-        <div className="text-sm">
-          <p className="mb-2 text-destructive">{t("activityError")}</p>
-          <Button size="sm" variant="outline" onClick={() => activity.refetch()}>
-            {t("retry")}
-          </Button>
-        </div>
-      )}
+        {activity.data && activity.data.length === 0 && (
+          <EmptyState icon={<ScrollText />} title={t("noActivity")} />
+        )}
 
-      {activity.data && activity.data.length === 0 && (
-        <EmptyState icon={<ScrollText />} title={t("noActivity")} />
-      )}
-
-      {activity.data && activity.data.length > 0 && (
-        <ul className="flex flex-col gap-2 text-sm">
-          {activity.data.map((entry) => (
-            <li key={entry.id} className="flex justify-between gap-4 border-b border-border/60 pb-2 last:border-0">
-              <span>
-                <strong className="font-medium">{entry.actorName ?? t("system")}</strong>{" "}
-                {entry.action} {entry.subjectType}
-              </span>
-              <span className="shrink-0 text-muted-foreground">
-                {new Date(entry.createdAt).toLocaleString()}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+        {activity.data && activity.data.length > 0 && (
+          <ul className="flex flex-col gap-2 text-sm">
+            {activity.data.map((entry) => (
+              <li key={entry.id} className="flex justify-between gap-4 border-b border-border/60 pb-2 last:border-0">
+                <span>
+                  <strong className="font-medium">{entry.actorName ?? t("system")}</strong>{" "}
+                  {entry.action} {entry.subjectType}
+                </span>
+                <span className="shrink-0 text-muted-foreground">
+                  {new Date(entry.createdAt).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

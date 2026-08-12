@@ -1,13 +1,7 @@
 {
-  "HomePage": {
-    "title": "app-platform",
-    "subtitle": "Next.js + NestJS + shared zod contracts, running in Docker with hot reload.",
-    "loggedInAs": "Logged in as {email}",
-    "logOut": "Log out",
-    "logIn": "Log in"
-  },
   "LoginPage": {
     "title": "Log in",
+    "subtitle": "Enter your email and password to sign in",
     "email": "Email",
     "password": "Password",
     "submit": "Log in",
@@ -26,7 +20,11 @@
     "theme": "Theme",
     "profile": "Profile",
     "account": "Account",
-    "logOut": "Log out"
+    "logOut": "Log out",
+    "groupGeneral": "General",
+    "groupSettings": "Settings",
+    "groupAccount": "Account",
+    "appName": "app-platform"
   },
   "ThemeToggle": {
     "toggle": "Toggle theme"

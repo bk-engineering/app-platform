@@ -2,14 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { ChevronsUpDown, LogOut, User as UserIcon } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { getMe } from "@/lib/auth";
 import { logout } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { sessionKeys } from "@/hooks/query-keys";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
 export function UserMenu() {
   const t = useTranslations("Nav");
@@ -31,24 +31,37 @@ export function UserMenu() {
     router.push("/login");
   };
 
+  const name = me.data?.user.displayName ?? me.data?.user.email ?? "";
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("account")}>
-          <UserIcon className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{me.data?.user.displayName ?? me.data?.user.email}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profile">{t("profile")}</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleLogout}>
-          <LogOut className="size-4" />
-          {t("logOut")}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton aria-label={t("account")} className="h-12">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                <UserIcon className="size-4" />
+              </div>
+              <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-sm font-medium">{name}</span>
+                <span className="truncate text-xs text-muted-foreground">{me.data?.user.email}</span>
+              </div>
+              <ChevronsUpDown className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-(--radix-dropdown-menu-trigger-width) min-w-56">
+            <DropdownMenuLabel>{name}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/profile">{t("profile")}</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleLogout}>
+              <LogOut className="size-4" />
+              {t("logOut")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

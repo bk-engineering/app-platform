@@ -6,9 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { Command } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Field, FieldError } from "@/components/ui/field";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError } from "@/lib/api-client";
 import { login } from "@/lib/auth";
 
@@ -46,41 +49,37 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex w-full max-w-sm flex-col gap-4"
-        noValidate
-      >
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm font-medium">
-            {t("email")}
-          </label>
-          <Input id="email" type="email" autoComplete="email" {...register("email")} />
-          {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/40 p-4">
+      <div className="flex items-center gap-2">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Command className="size-4" />
         </div>
+        <span className="text-lg font-semibold">app-platform</span>
+      </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-medium">
-            {t("password")}
-          </label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            {...register("password")}
-          />
-          {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
-        </div>
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-xl">{t("title")}</CardTitle>
+          <CardDescription>{t("subtitle")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+            <Field label={t("email")} htmlFor="email" error={errors.email?.message}>
+              <Input id="email" type="email" autoComplete="email" {...register("email")} />
+            </Field>
 
-        {formError && <p className="text-sm text-red-600">{formError}</p>}
+            <Field label={t("password")} htmlFor="password" error={errors.password?.message}>
+              <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
+            </Field>
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? t("submitting") : t("submit")}
-        </Button>
-      </form>
+            {formError && <FieldError>{formError}</FieldError>}
+
+            <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
+              {isSubmitting ? t("submitting") : t("submit")}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -73,7 +73,7 @@ export default function RolesSettingsPage() {
             <button
               key={role.id}
               onClick={() => setEditing(role)}
-              className="flex flex-col gap-1 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-accent"
+              className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent"
             >
               <div className="flex items-center gap-1.5">
                 <span className="font-medium">{role.name}</span>
