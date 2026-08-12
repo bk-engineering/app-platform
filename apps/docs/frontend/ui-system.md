@@ -1,12 +1,12 @@
 ---
 title: ระบบ UI (shadcn/ui)
-status: planned
-statusNote: มีแค่ Button ที่เขียนเองโดยไม่ผ่าน shadcn CLI ไม่มี components.json และไม่มี Radix primitive เลย
+status: implemented
+statusNote: components.json มีแล้ว Button/Dialog/Select/Checkbox/Table/ฯลฯ ผ่าน Radix จริง สีทุก component ผูกกับ CSS variable
 ---
 
 # ระบบ UI (shadcn/ui)
 
-<Status value="planned" note="Button ที่มีอยู่ไม่ได้มาจาก CLI จริง" />
+<Status value="implemented" note="component หลักที่ใช้ในหน้าผลิตภัณฑ์มีครบและผ่าน Radix จริง" />
 
 shadcn/ui ไม่ใช่ npm package ที่ import เข้ามาใช้ — มันคือ CLI ที่ copy โค้ด component ลงมาไว้ใน repo โดยตรง เราแก้มันได้เต็มที่เพราะเราเป็นเจ้าของโค้ดนั้นจริง ๆ
 
@@ -75,7 +75,7 @@ apps/web/src/components/
 ## Component ตัวอย่างที่ผ่าน CLI จริง
 
 ```tsx
-// apps/web/src/components/ui/button.tsx — เป้าหมาย (สร้างจาก `shadcn add button`)
+// apps/web/src/components/ui/button.tsx
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -115,10 +115,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 ```
 
-สองจุดที่ทำให้เวอร์ชันนี้ต่างจากของจริงในโปรเจกต์วันนี้: ใช้สี `primary`/`accent` ที่ผูกกับ CSS variable (ไม่ใช่ `bg-brand-600` ที่ไม่มีนิยามอยู่จริง) และมี `asChild` ผ่าน Radix `Slot` ทำให้ `<Button asChild><Link href="/x">ไป</Link></Button>` render เป็น `<a>` ตัวเดียวแทนที่จะซ้อน `<button><a>` ผิด HTML
+โค้ดจริงใช้สี `primary`/`accent` ที่ผูกกับ CSS variable (ไม่ใช่ `bg-brand-600` แบบเดิมที่ไม่มีนิยาม) และมี `asChild` ผ่าน Radix `Slot` ทำให้ `<Button asChild><Link href="/x">ไป</Link></Button>` render เป็น `<a>` ตัวเดียวแทนที่จะซ้อน `<button><a>` ผิด HTML — `Button` จริงยังมี variant เพิ่มจากตัวอย่างนี้ (`destructive`, `secondary`, ขนาด `icon`)
 
-::: danger `bg-brand-600` ใน `button.tsx` ปัจจุบันคือ token ที่ไม่มีอยู่จริง
-โค้ดวันนี้อ้าง `bg-brand-600`, `bg-brand-700`, `border-brand-500` ฯลฯ แต่ Tailwind config ไม่มีการนิยาม `brand` scale เลย — class เหล่านี้ไม่ output CSS อะไรออกมา ปุ่มจึงไม่มีสีพื้นหลังเลยตอนนี้ ต้องแก้พร้อมกับตั้ง `components.json` และ CSS variable ให้ครบ ไม่ใช่แก้แค่ชื่อ class
+::: tip `bg-brand-600` ถูกแก้แล้ว
+เดิม `button.tsx` อ้าง `bg-brand-600` ที่ไม่มีนิยามใน Tailwind config ทำให้ปุ่มไม่มีสีพื้นหลัง ตอนนี้แก้เป็นสี `primary`/`accent`/`destructive` ที่ผูกกับ CSS variable ใน `globals.css` แล้ว (ดู [ธีม & dark mode](/frontend/theming)) ทำให้สลับ dark mode ได้โดยไม่ต้องแก้ component
 :::
 
 ## เชื่อมกับสิทธิ์การใช้งาน
@@ -142,15 +142,15 @@ component ใน `ui/` ไม่ควรรู้เรื่อง CASL เล
 | `Select` | เชื่อม label กับ control ผ่าน `aria-labelledby` อัตโนมัติ |
 | `Slot` (`asChild`) | ไม่เพิ่ม element พิเศษที่ทำลายความหมายของ HTML (เช่น `<button>` ซ้อนใน `<a>`) |
 
-การเขียน component เองใหม่หมด (อย่างที่ `button.tsx` ปัจจุบันทำ) แปลว่าเสีย behavior เหล่านี้ไปฟรี ๆ โดยไม่จำเป็น
+การเขียน component เองใหม่หมดโดยไม่ใช้ primitive ของ Radix แปลว่าเสีย behavior เหล่านี้ไปฟรี ๆ โดยไม่จำเป็น — component ปัจจุบันเลี่ยงปัญหานี้แล้วด้วยการห่อ Radix primitive ตรง ๆ
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `components.json` จาก `shadcn init` | ไม่มีไฟล์นี้ในโปรเจกต์ |
-| `Button` สร้างจาก `shadcn add button` (Radix `Slot`, `asChild`) | `button.tsx` เขียนเอง ไม่มี `Slot`, ไม่มี `asChild`, ไม่ได้มาจาก CLI |
-| สี component ผูกกับ CSS variable | อ้าง `bg-brand-600` ที่ไม่มีนิยามใน Tailwind config เลย |
-| dependency `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | **ติดตั้งครบแล้ว** ใน `package.json` |
-| `@radix-ui/*` | ยังไม่ได้ติดตั้งเลยสักตัว |
-| component อื่นนอกจาก Button (`Dialog`, `Input`, `Field`, ฯลฯ) | ไม่มี |
+| `components.json` | มีจริงในโปรเจกต์ |
+| `Button` ใช้ Radix `Slot`, `asChild` | มีจริง พร้อม variant `default`/`outline`/`ghost`/`destructive`/`secondary` |
+| สี component ผูกกับ CSS variable | มีจริง — `primary`/`accent`/`destructive`/`success`/`border`/ฯลฯ ใน `globals.css` |
+| dependency `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` | ติดตั้งและใช้งานจริง |
+| `@radix-ui/*` | ติดตั้งและใช้งานจริง: `react-slot`, `react-dialog`, `react-select`, `react-checkbox`, `react-label`, `react-tooltip`, `react-dropdown-menu` |
+| component อื่นนอกจาก Button | มีจริง: `Dialog`, `Select`, `Checkbox`, `Label`, `Field`, `Table`, `Badge`, `Skeleton`, `EmptyState`, `Tooltip`, `DropdownMenu`, `Toaster` (sonner) |
 :::

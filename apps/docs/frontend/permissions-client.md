@@ -1,12 +1,12 @@
 ---
 title: สิทธิ์บน UI
 status: implemented
-statusNote: AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้า settings/users — ยังไม่มีเมนูให้กรอง
+statusNote: AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้า settings/users, settings/roles และเมนู nav
 ---
 
 # สิทธิ์บน UI
 
-<Status value="implemented" note="AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้า settings/users" />
+<Status value="implemented" note="AbilityProvider/<Can>/ForbiddenState ทำงานจริง ใช้กรองหน้าและเมนู nav" />
 
 ::: danger อ่านก่อนอย่างอื่น
 ทุกอย่างในหน้านี้คือ **ประสบการณ์ผู้ใช้ ไม่ใช่ความปลอดภัย** `<Can>` ซ่อนปุ่ม ไม่ได้ป้องกันอะไร ใครก็เปิด devtools แล้วยิง API ตรงได้ ความปลอดภัยอยู่ที่ [guard ฝั่ง server](/auth/casl) เสมอและเท่านั้น
@@ -237,8 +237,8 @@ it("แสดงปุ่มลบสำหรับ manager", () => {
 | `@casl/ability` + `@casl/react` | ✅ ทั้งคู่ติดตั้งแล้ว |
 | `AbilityProvider` + `<Can>` | ✅ `apps/web/src/lib/ability-context.tsx` ห่อ `@casl/react` v7 (ไม่ได้ประกอบ context เอง) ต่อเข้ากับ `providers.tsx` |
 | `GET /auth/me` ส่ง rules | ✅ ดู [CASL](/auth/casl) (route จริงไม่มี `/v1` prefix) |
-| เมนูกรองตามสิทธิ์ | ไม่มีเมนู — `apps/web` ยังไม่มี nav component |
-| `<ForbiddenState />` | ✅ `apps/web/src/components/forbidden-state.tsx` ใช้กรองหน้า `settings/users` ด้วย `ability.cannot("read","User")` |
+| เมนูกรองตามสิทธิ์ | ✅ `apps/web/src/components/app-nav.tsx` กรองรายการ users/roles ด้วย ability จริง |
+| `<ForbiddenState />` | ✅ `apps/web/src/components/forbidden-state.tsx` ใช้กรองหน้า `settings/users`, `settings/roles` ด้วย ability check |
 | server prefetch + hydrate | ไม่มี — `AbilityProvider` ยิง `useQuery` ฝั่ง client เท่านั้น |
 | เทส | ไม่มีเครื่องมือเทสใน `apps/web` เลย — เทส `<Can>`/ability ที่มีอยู่ตอนนี้เป็นฝั่ง API (`ability.factory.spec.ts`) เท่านั้น |
 :::

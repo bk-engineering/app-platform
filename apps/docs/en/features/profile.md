@@ -1,12 +1,12 @@
 ---
 title: Profile
-status: planned
-statusNote: No UI, no avatar upload, no Google account linking
+status: in-progress
+statusNote: /profile is real — editing displayName, viewing email, and changing password all work — avatar upload and Google account linking are not implemented yet
 ---
 
 # Profile
 
-<Status value="planned" />
+<Status value="in-progress" note="basic profile editing and password change work; avatar/Google are not implemented" />
 
 > **The profile page is the one place every user can always edit their own data, regardless of role — the editable fields match the `${user.id}` condition in the [permission table](/en/auth/rbac-model) exactly.**
 
@@ -123,18 +123,19 @@ Uses the same `PasswordSchema` as [Signup](/en/auth/signup), and always requires
 
 ## Checklist
 
-- [ ] Fields outside `member`'s allowlist are never rendered in the form
-- [ ] Avatar uploads go straight to object storage via a presigned URL, not through the API server
-- [ ] Unlinking Google is blocked when there's no `passwordHash`
-- [ ] Changing the password always requires confirming the current one first
-- [ ] Email changes are not part of this form (require a separate verification flow)
+- [x] Fields outside `member`'s allowlist are never rendered in the form (the page only shows editable `displayName` plus read-only `email`)
+- [ ] Avatar uploads go straight to object storage via a presigned URL, not through the API server — **not implemented at all** (no `File` module, no object storage configured)
+- [ ] Unlinking Google is blocked when there's no `passwordHash` — **not implemented**, since there's no Google OAuth at all yet
+- [x] Changing the password always requires confirming the current one first
+- [x] Email changes are not part of this form (shown read-only only)
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `/profile` route | None — no UI exists at all |
-| `PATCH /v1/auth/me` | This endpoint doesn't exist — no auth module is implemented yet |
-| `POST /v1/files/presign` | No `File` table and no file-handling module exist (see [File storage](/en/backend/file-storage)) |
-| Connecting Google from the profile page | No Google OAuth exists at all (see [Signup](/en/auth/signup)) |
-| Change password | No endpoint exists, and there's no current-password verification |
+| `/profile` route | Real, at `app/[locale]/(app)/profile/page.tsx` |
+| `PATCH /v1/auth/me` | Real — updates `displayName`/`locale`/`theme`, using field-level ability checks |
+| Editing `locale`/`theme` from the profile page | The schema supports it, but the profile page UI only exposes `displayName` — `theme` is edited on the separate [Settings · Theme](/en/features/settings-theme) page per spec |
+| `POST /v1/files/presign` | Still missing — no `File` table in Prisma, no file-handling module (see [File storage](/en/backend/file-storage)) |
+| Connecting Google from the profile page | Still missing — no Google OAuth at all (see [Signup](/en/auth/signup)) |
+| Change password | Real — `POST /v1/auth/change-password` verifies the current password with `bcrypt.compare` first |
 :::

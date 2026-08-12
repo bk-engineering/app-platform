@@ -1,12 +1,12 @@
 ---
 title: ภาพรวมฟรอนต์เอนด์
-status: in-progress
-statusNote: next-intl ต่อสายครบแล้ว TanStack Query มี provider แต่ยังไม่มี query hook ส่วน form, UI system และ theming ยังเป็นสเปกล้วน
+status: implemented
+statusNote: i18n, data fetching hook, form, UI system และ theming ต่อสายและใช้งานจริงครบแล้ว เหลือแค่ server prefetch/hydration ที่ยังเป็น client-fetch
 ---
 
 # ภาพรวมฟรอนต์เอนด์
 
-<Status value="in-progress" note="i18n ใช้งานได้จริง ที่เหลือยังเป็น plumbing หรือสเปก" />
+<Status value="implemented" note="ทุกเสาหลักมีโค้ดจริงรันอยู่ — เหลือ server prefetch/hydration เป็นช่องว่างหลัก" />
 
 หมวดนี้อธิบายว่า `apps/web` ประกอบกันยังไง — ตั้งแต่ดึงข้อมูล ไปจนถึงฟอร์ม ระบบ UI ภาษา และธีม หน้านี้คือแผนที่ ส่วนรายละเอียดแต่ละเรื่องอยู่ในหน้าย่อย
 
@@ -15,12 +15,12 @@ statusNote: next-intl ต่อสายครบแล้ว TanStack Query ม
 | งาน | เครื่องมือ | สถานะ |
 | --- | --- | --- |
 | Routing & rendering | Next.js 16 App Router | <Status value="implemented" inline /> |
-| Data fetching / cache | TanStack Query | <Status value="in-progress" inline /> |
-| ฟอร์ม + validate | react-hook-form + `zodResolver` | <Status value="planned" inline /> |
-| ระบบ component | shadcn/ui (บน Radix + Tailwind) | <Status value="planned" inline /> |
-| ภาษา | next-intl | <Status value="implemented" inline note="มีบั๊ก defaultLocale" /> |
-| ธีม / dark mode | next-themes (ยังไม่ติดตั้ง) | <Status value="planned" inline /> |
-| สัญญาข้อมูล | zod schema จาก `packages/contracts` | <Status value="planned" inline note="ยังไม่มีใครใน web import" /> |
+| Data fetching / cache | TanStack Query | <Status value="in-progress" inline note="มี hook ครบทุกทรัพยากรแล้ว เหลือ server prefetch" /> |
+| ฟอร์ม + validate | react-hook-form + `zodResolver` | <Status value="implemented" inline /> |
+| ระบบ component | shadcn/ui (บน Radix + Tailwind) | <Status value="implemented" inline /> |
+| ภาษา | next-intl | <Status value="implemented" inline /> |
+| ธีม / dark mode | next-themes | <Status value="implemented" inline /> |
+| สัญญาข้อมูล | zod schema จาก `packages/contracts` | <Status value="implemented" inline note="hook ทุกตัวใน web import จาก contracts" /> |
 
 ทุกแถวเลือกเพราะเหตุผลเดียวกัน: ให้ TypeScript จับความผิดพลาดตอน build แทนที่จะไปพังตอน runtime ในมือผู้ใช้
 
@@ -36,8 +36,8 @@ flowchart TB
   subgraph CrossCutting["ตัดขวางทุกหน้า"]
     I18N["next-intl<br/>proxy.ts + routing.ts"]
     Q["TanStack Query<br/>providers.tsx"]
-    TH["next-themes<br/>(ยังไม่มี)"]
-    AB["AbilityProvider<br/>(ยังไม่มี)"]
+    TH["next-themes<br/>providers.tsx"]
+    AB["AbilityProvider<br/>ability-context.tsx"]
   end
 
   subgraph Leaf["สิ่งที่ผู้ใช้เห็นจริง"]
@@ -55,24 +55,22 @@ flowchart TB
   UI --> FORM
 
   classDef done fill:#f0fdf4,stroke:#16a34a
-  classDef todo fill:#fef2f2,stroke:#dc2626
-  class I18N,Q done
-  class TH,AB,UI,FORM todo
+  class I18N,Q,TH,AB,UI,FORM done
 ```
 
-เส้นประ = provider ที่ห่อทั้งต้นไม้จาก layout เส้นทึบ = การ render ปกติ สีเขียวคือมีโค้ดจริงรันอยู่ สีแดงคือยังเป็นสเปก
+เส้นประ = provider ที่ห่อทั้งต้นไม้จาก layout เส้นทึบ = การ render ปกติ ทุก node สีเขียวมีโค้ดจริงรันอยู่แล้ว
 
 ## แผนที่หน้าเอกสาร
 
 | หน้า | เรื่อง | สถานะ |
 | --- | --- | --- |
 | [Data fetching](/frontend/data-fetching) | TanStack Query, query key, prefetch/hydrate | <Status value="in-progress" inline /> |
-| [ฟอร์ม](/frontend/forms) | react-hook-form + `zodResolver` บน schema เดียวกับ API | <Status value="planned" inline /> |
-| [ระบบ UI](/frontend/ui-system) | shadcn/ui, `components.json`, การตั้ง token | <Status value="planned" inline /> |
+| [ฟอร์ม](/frontend/forms) | react-hook-form + `zodResolver` บน schema เดียวกับ API | <Status value="implemented" inline /> |
+| [ระบบ UI](/frontend/ui-system) | shadcn/ui, `components.json`, การตั้ง token | <Status value="implemented" inline /> |
 | [i18n](/frontend/i18n) | next-intl, routing, ไฟล์ข้อความ | <Status value="implemented" inline /> |
-| [ธีม & dark mode](/frontend/theming) | next-themes, CSS variable, toggle | <Status value="planned" inline /> |
-| [Session ฝั่ง client](/frontend/auth-client) | เก็บ token, refresh อัตโนมัติ, ป้องกัน route | <Status value="planned" inline /> |
-| [สิทธิ์บน UI](/frontend/permissions-client) | `<Can>`, `AbilityProvider` | <Status value="planned" inline /> |
+| [ธีม & dark mode](/frontend/theming) | next-themes, CSS variable, toggle | <Status value="implemented" inline /> |
+| [Session ฝั่ง client](/frontend/auth-client) | เก็บ token, refresh อัตโนมัติ, ป้องกัน route | <Status value="in-progress" inline /> |
+| [สิทธิ์บน UI](/frontend/permissions-client) | `<Can>`, `AbilityProvider` | <Status value="implemented" inline /> |
 
 หน้าผลิตภัณฑ์จริง (ที่ประกอบทุกอย่างข้างบนเข้าด้วยกัน) อยู่ในหมวด [หน้าผลิตภัณฑ์](/features/dashboard) — เช่น [แดชบอร์ด](/features/dashboard), [ตั้งค่า · จัดการผู้ใช้](/features/settings-users) และ [ตั้งค่า · ธีม](/features/settings-theme)
 
@@ -90,19 +88,17 @@ flowchart TB
 
 ## สิ่งที่ยังไม่มี
 
-- ไม่มี route จริงนอกจาก `[locale]/page.tsx` — ไม่มี dashboard, settings, profile หรือหน้า auth ใด ๆ
-- ไม่มี query/mutation hook แม้แต่ตัวเดียว มีแค่ `QueryClientProvider` เปล่า ๆ
-- ไม่มี form component เลย แม้ dependency จะติดตั้งไว้แล้ว
-- `Button` ตัวเดียวที่มีไม่ได้ผ่าน shadcn CLI และอ้าง Tailwind token ที่ไม่มีจริง (`bg-brand-600`)
-- ไม่มี dark mode ไม่มี `next-themes`
+- ยังไม่มี server prefetch + `HydrationBoundary` — ทุก query ยังยิงจาก client หลัง mount ทั้งหมด
+- token ฝั่ง client ยังเก็บใน `sessionStorage` ไม่ใช่ httpOnly cookie ตาม ADR-0006 (ดู [Session ฝั่ง client](/frontend/auth-client))
+- หน้าโปรไฟล์ยังไม่มี avatar upload และ Google account linking (ต้องมี object storage/Google credentials)
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| หน้า dashboard / settings / profile | มีแค่ `app/[locale]/page.tsx` กับ `layout.tsx` |
-| query/mutation hook ในทุกหน้า | `providers.tsx` มี `QueryClientProvider` แต่ไม่มี hook ใช้งานจริงเลย |
-| ฟอร์มผ่าน react-hook-form + zod | dependency ติดตั้งแล้ว ไม่มี form component |
-| shadcn/ui เต็มระบบ | มีแค่ `components/ui/button.tsx` ที่เขียนเอง ไม่มี `components.json` |
-| `apps/web` ใช้ schema จาก `packages/contracts` | ยังไม่มีจุดไหน import เลย |
-| dark mode | ไม่มีโค้ดใด ๆ ที่เกี่ยวข้อง |
+| หน้า dashboard / settings / profile | มีครบแล้ว — `dashboard`, `settings/users`, `settings/roles`, `settings/theme`, `profile` |
+| query/mutation hook ในทุกหน้า | มี hook ต่อทรัพยากรครบ (`use-users`, `use-roles`, `use-dashboard`, `use-me`, ฯลฯ) แต่ยังไม่มี server prefetch |
+| ฟอร์มผ่าน react-hook-form + zod | `Field`/`FieldError`/`applyServerErrors` ใช้งานจริงในทุกฟอร์ม |
+| shadcn/ui เต็มระบบ | `components.json` + component จาก Radix ครบ (`Button`, `Dialog`, `Select`, `Checkbox`, `Table`, ฯลฯ) |
+| `apps/web` ใช้ schema จาก `packages/contracts` | hook ทุกตัวใน `hooks/` import schema จาก contracts จริง |
+| dark mode | `next-themes` + CSS variable ต่อโหมด + `ThemeToggle` ทำงานจริง |
 :::

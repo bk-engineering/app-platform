@@ -1,12 +1,12 @@
 ---
 title: แดชบอร์ด
-status: planned
-statusNote: ยังไม่มีหน้า UI ใด ๆ ใน apps/web นอกจาก home page
+status: implemented
+statusNote: หน้า /dashboard ทำงานจริง มีการ์ดสรุปตัวเลขและ activity feed ต่อกับ endpoint จริง
 ---
 
 # แดชบอร์ด
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **หน้าแรกที่ผู้ใช้เห็นหลัง login ต้องตอบคำถามเดียวใน 3 วินาที: "วันนี้มีอะไรที่ฉันต้องรู้"**
 
@@ -106,23 +106,25 @@ sequenceDiagram
 
 | Endpoint | Method | สิทธิ์ | หมายเหตุ |
 | --- | --- | --- | --- |
-| `/v1/dashboard/summary` | `GET` | `read User` (ไม่จำกัด condition) | คืนตัวเลขรวม ไม่ใช่รายชื่อ user จริง |
-| `/v1/audit-logs` | `GET` | `read AuditLog` | query param `limit`, `cursor` สำหรับ pagination |
+| `/v1/dashboard/summary` | `GET` | `read User` แบบไม่จำกัด condition (เช็ก unconditional เองในเซอร์วิส) | คืนตัวเลขรวม ไม่ใช่รายชื่อ user จริง |
+| `/v1/audit-logs` | `GET` | `read AuditLog` | query param `limit` เท่านั้น — ยังไม่มี `cursor` สำหรับ pagination |
 | `/v1/auth/me` | `GET` | ทุกคนที่ login แล้ว | ใช้ค่าที่มีอยู่แล้ว ไม่ยิงซ้ำถ้า session provider โหลดไว้แล้ว |
 
 ## เช็กลิสต์
 
-- [ ] widget แต่ละตัวมี error boundary แยกกัน
-- [ ] widget ที่ผู้ใช้ไม่มีสิทธิ์ไม่ถูก render เลย (ไม่ใช่ render แล้วซ่อน)
-- [ ] ทักทายชื่อ render จาก server component ไม่รอ client fetch
-- [ ] skeleton loading state ครบทุก widget
-- [ ] empty state มีข้อความและไอคอนที่สื่อความหมาย ไม่ใช่ตารางว่างเปล่า
+- [x] widget แต่ละตัวมี error/loading state แยกกัน (ผ่าน `useQuery` แยก query ต่อ widget)
+- [x] widget ที่ผู้ใช้ไม่มีสิทธิ์ไม่ถูก render เลย (เช็กด้วย ability ก่อน mount แต่ละ widget)
+- [ ] ทักทายชื่อ render จาก server component ไม่รอ client fetch — ปัจจุบันยังรอ client query เหมือน widget อื่น
+- [x] skeleton loading state ครบทุก widget
+- [x] empty state มีข้อความและไอคอนที่สื่อความหมาย ไม่ใช่ตารางว่างเปล่า
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `/dashboard` route | ไม่มี — `apps/web` มีแค่ home page เดียว |
-| `GET /v1/dashboard/summary` | ไม่มี endpoint นี้ |
-| `GET /v1/audit-logs` | ไม่มีตาราง `AuditLog` เลย (ดู [Data model](/architecture/data-model)) |
-| `<Can>` gating widget | ไม่มี เพราะ CASL ยังไม่ implement (ดู [CASL](/auth/casl)) |
+| `/dashboard` route | มีจริงที่ `app/[locale]/(app)/dashboard/page.tsx` |
+| `GET /v1/dashboard/summary` | มีจริง — คืน `totalUsers`/`activeUsers`/`inactiveUsers` |
+| `GET /v1/audit-logs` | มีจริง มีข้อมูลจริงจากการ update user/role ที่เขียน audit log อัตโนมัติ |
+| widget gating ตามสิทธิ์ | ทำผ่าน ability check ตรง ๆ ก่อน mount widget (ไม่ได้ใช้ `<Can>` component ตรง ๆ แต่ผลลัพธ์เดียวกัน) |
+| widget error boundary ระดับ React (ไม่ใช่แค่ query error) | ยังไม่มี — อาศัย `useQuery` แยก query ต่อ widget แทน ซึ่งกัน render error ข้ามกันได้เหมือนกันสำหรับ error จาก data fetching |
+| Server Component prefetch สำหรับคำทักทาย | ยังไม่มี — ทั้งหน้ายังเป็น client component ที่ query `auth/me` ตอน mount |
 :::

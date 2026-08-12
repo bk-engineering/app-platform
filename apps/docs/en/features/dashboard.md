@@ -1,12 +1,12 @@
 ---
 title: Dashboard
-status: planned
-statusNote: There is no UI at all in apps/web besides the home page
+status: implemented
+statusNote: /dashboard is real — summary cards and an activity feed work against real endpoints
 ---
 
 # Dashboard
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **The first page a user sees after login must answer one question in 3 seconds: "what do I need to know today?"**
 
@@ -106,23 +106,25 @@ The user's name already exists in the SSR session — there's no reason to wait 
 
 | Endpoint | Method | Permission | Notes |
 | --- | --- | --- | --- |
-| `/v1/dashboard/summary` | `GET` | `read User` (unrestricted) | Returns aggregate counts, not real user rows |
-| `/v1/audit-logs` | `GET` | `read AuditLog` | `limit`, `cursor` query params for pagination |
+| `/v1/dashboard/summary` | `GET` | `read User` unrestricted by conditions (checked explicitly in the service) | Returns aggregate counts, not real user rows |
+| `/v1/audit-logs` | `GET` | `read AuditLog` | Only a `limit` query param today — no `cursor` for pagination yet |
 | `/v1/auth/me` | `GET` | Anyone logged in | Reuses existing session data if the provider already loaded it |
 
 ## Checklist
 
-- [ ] Each widget has its own error boundary
-- [ ] A widget the user has no permission for is never rendered (not rendered-then-hidden)
-- [ ] The name greeting renders server-side, not waiting on a client fetch
-- [ ] Skeleton loading states exist for every widget
-- [ ] Empty states have a meaningful icon and message, not just a blank table
+- [x] Each widget has its own error/loading state (separate `useQuery` per widget)
+- [x] A widget the user has no permission for is never rendered (ability checked before mounting each widget)
+- [ ] The name greeting renders server-side, not waiting on a client fetch — still waits on a client query like every other widget
+- [x] Skeleton loading states exist for every widget
+- [x] Empty states have a meaningful icon and message, not just a blank table
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `/dashboard` route | None — `apps/web` has only a single home page |
-| `GET /v1/dashboard/summary` | This endpoint doesn't exist |
-| `GET /v1/audit-logs` | No `AuditLog` table exists at all (see [Data model](/en/architecture/data-model)) |
-| `<Can>` gating widgets | None, because CASL isn't implemented yet (see [CASL](/en/auth/casl)) |
+| `/dashboard` route | Real, at `app/[locale]/(app)/dashboard/page.tsx` |
+| `GET /v1/dashboard/summary` | Real — returns `totalUsers`/`activeUsers`/`inactiveUsers` |
+| `GET /v1/audit-logs` | Real, with real data populated automatically from user/role updates |
+| Widget gating by permission | Done via a direct ability check before mounting each widget (not literally the `<Can>` component, but the same effect) |
+| React-level error boundary per widget | Still missing — relies on a separate `useQuery` per widget instead, which contains data-fetching errors equivalently |
+| Server Component prefetch for the greeting | Still missing — the whole page is a client component that queries `auth/me` on mount |
 :::

@@ -1,12 +1,12 @@
 ---
 title: Settings · Theme
-status: planned
-statusNote: No UI, and User.theme has no database column yet
+status: implemented
+statusNote: /settings/theme is real — an optimistic mode picker synced to PATCH /v1/auth/me works
 ---
 
 # Settings · Theme
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **Theme lives in two places: a cookie for a flash-free first render, and `User.theme` to remember the choice across devices. These two must stay in sync, not compete.**
 
@@ -99,17 +99,18 @@ If a user sets dark mode on their phone, then opens the site on a computer with 
 
 ## Checklist
 
-- [ ] Theme changes are always optimistic, never waiting on the API
-- [ ] The cookie is set alongside the `<html>` class in the same tick, avoiding FOUC
-- [ ] A successful login syncs `User.theme` → cookie automatically
-- [ ] Failed saves retry without blocking the UI
-- [ ] The preview panel shows real components from the [UI system](/en/frontend/ui-system), not a separate mockup
+- [x] Theme changes are always optimistic, never waiting on the API (`setTheme` fires immediately, `PATCH` follows)
+- [ ] The cookie is set alongside the `<html>` class in the same tick, avoiding FOUC — not implemented; the page relies purely on `next-themes`' `localStorage` mechanism, no cookie at all
+- [ ] A successful login syncs `User.theme` → cookie automatically — not implemented, since there's no cookie yet to sync into (see [Theming & dark mode](/en/frontend/theming#persisting-the-user-s-choice))
+- [x] Failed saves retry without blocking the UI (a single 3-second delayed retry today, not full exponential backoff)
+- [x] The preview panel shows real components from the [UI system](/en/frontend/ui-system), not a separate mockup
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `/settings/theme` route | None — no UI exists at all |
-| `User.theme` column | Doesn't exist in the actual database (see [Data model](/en/architecture/data-model) — this is the target spec) |
-| `PATCH /v1/auth/me { theme }` | This endpoint doesn't exist |
-| Frontend dark-mode mechanism | See status at [Theming & dark mode](/en/frontend/theming) |
+| `/settings/theme` route | Real, at `app/[locale]/(app)/settings/theme/page.tsx` |
+| `User.theme` column | Real in the database, defaults to `"system"` |
+| `PATCH /v1/auth/me { theme }` | Real, using the same field-level ability check as `PATCH /v1/users/:id` |
+| Frontend dark-mode mechanism | Fully implemented — see [Theming & dark mode](/en/frontend/theming) |
+| Cookie for a flash-free SSR first render | Still missing — the initial theme on page load still comes only from `next-themes`' `localStorage`/`prefers-color-scheme`, not `User.theme` |
 :::

@@ -1,12 +1,12 @@
 ---
 title: ตั้งค่า · จัดการผู้ใช้
-status: planned
-statusNote: ไม่มีหน้า UI ใด ๆ — มีแค่ POST /users แบบ public
+status: implemented
+statusNote: หน้า /settings/users ทำงานจริง — list/search/create/edit/delete (soft delete) กรองด้วย accessibleBy และ field-level ability
 ---
 
 # ตั้งค่า · จัดการผู้ใช้
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **หน้านี้คือ CRUD ของ `User` ที่กรองด้วย [CASL](/auth/casl) เต็มรูปแบบ — สิ่งที่ `admin` เห็นกับสิ่งที่ `manager` เห็นต้องต่างกันจากกฎเดียวกัน ไม่ใช่สอง component คนละไฟล์**
 
@@ -125,18 +125,18 @@ sequenceDiagram
 
 ## เช็กลิสต์
 
-- [ ] `GET /v1/users` กรองด้วย `accessibleBy` ที่ server ไม่ใช่ client
-- [ ] field ที่ผู้ใช้ปัจจุบันแก้ไม่ได้ไม่ถูก render ในฟอร์ม
-- [ ] ปุ่มลบมี dialog ยืนยันเสมอ
-- [ ] `USER_LAST_ADMIN` แสดงเป็น toast ที่อ่านเข้าใจ ไม่ใช่ raw error code
-- [ ] pagination แบบ cursor หรือ offset ให้ตรงกับที่ backend implement
+- [x] `GET /v1/users` กรองด้วย `accessibleBy` ที่ server ไม่ใช่ client
+- [x] field ที่ผู้ใช้ปัจจุบันแก้ไม่ได้ไม่ถูก render ในฟอร์ม (เช็กด้วย `ability.can("update", target, field)` ต่อ field)
+- [x] ปุ่มลบมี dialog ยืนยันเสมอ
+- [x] `USER_LAST_ADMIN` แสดงเป็น toast ที่อ่านเข้าใจ ไม่ใช่ raw error code
+- [ ] pagination แบบ cursor หรือ offset ให้ตรงกับที่ backend implement — ปัจจุบันมีแค่ offset (`page`/`limit`) หน้าเดียว ไม่มี infinite scroll/cursor
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `/settings/users` route | ไม่มี — ไม่มีหน้า UI ใด ๆ ใน `apps/web` |
-| `GET /v1/users` ที่กรองด้วย ability | มี `GET /users` แบบพื้นฐาน ไม่มี guard ไม่มี CASL |
-| `UpdateUserSchema` | มีแค่ `CreateUserSchema` ยังไม่มี schema สำหรับ update |
-| `DELETE /v1/users/:id` แบบ soft delete | ไม่มี endpoint ลบเลย และ `User` ไม่มีคอลัมน์ `deletedAt` |
-| ตรวจ `USER_LAST_ADMIN` | ไม่มีตาราง `Role` เลย จึงตรวจไม่ได้ในตอนนี้ |
+| `/settings/users` route | มีจริงที่ `app/[locale]/(app)/settings/users/page.tsx` |
+| `GET /v1/users` ที่กรองด้วย ability | มีจริง กรองด้วย `accessibleBy(ability, "read").User` รองรับ `search` ด้วย |
+| `UpdateUserSchema` | มีครบ: `displayName`, `email`, `status`, `roleIds` (ทุก field ตรวจ field-level ability ก่อนแก้) |
+| `DELETE /v1/users/:id` แบบ soft delete | มีจริง ตั้ง `deletedAt` และเช็ก `USER_LAST_ADMIN` ก่อนลบ |
+| ตรวจ `USER_LAST_ADMIN` | มีจริง — บล็อกการลบ admin คนสุดท้าย |
 :::

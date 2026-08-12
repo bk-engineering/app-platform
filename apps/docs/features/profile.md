@@ -1,12 +1,12 @@
 ---
 title: โปรไฟล์
-status: planned
-statusNote: ไม่มี UI, ไม่มี avatar upload, ไม่มี Google account linking
+status: in-progress
+statusNote: หน้า /profile ทำงานจริง — แก้ displayName, ดู email, เปลี่ยนรหัสผ่านได้ — ยังไม่มี avatar upload และ Google account linking
 ---
 
 # โปรไฟล์
 
-<Status value="planned" />
+<Status value="in-progress" note="แก้ข้อมูลพื้นฐานและเปลี่ยนรหัสผ่านได้จริง — avatar/Google ยังไม่ implement" />
 
 > **หน้าโปรไฟล์คือที่เดียวที่ผู้ใช้ทุกคนแก้ข้อมูลของตัวเองได้เสมอ ไม่ว่า role จะเป็นอะไร — field ที่แก้ได้ตรงกับ `${user.id}` condition ใน[ตารางสิทธิ์](/auth/rbac-model) เป๊ะ**
 
@@ -123,18 +123,19 @@ sequenceDiagram
 
 ## เช็กลิสต์
 
-- [ ] field ที่ไม่อยู่ใน allowlist ของ `member` ไม่ถูก render ในฟอร์ม
-- [ ] avatar อัปโหลดตรงไป object storage ผ่าน presigned URL ไม่ผ่าน API server
-- [ ] ยกเลิกเชื่อมต่อ Google ถูกบล็อกถ้าไม่มี `passwordHash`
-- [ ] เปลี่ยนรหัสผ่านต้องยืนยันรหัสผ่านเดิมก่อนเสมอ
-- [ ] เปลี่ยนอีเมลไม่อยู่ในฟอร์มนี้ (ต้องมี flow ยืนยันแยก)
+- [x] field ที่ไม่อยู่ใน allowlist ของ `member` ไม่ถูก render ในฟอร์ม (หน้าโปรไฟล์แสดงแค่ `displayName` ที่แก้ได้ + `email` แบบ read-only)
+- [ ] avatar อัปโหลดตรงไป object storage ผ่าน presigned URL ไม่ผ่าน API server — **ยังไม่ implement** ทั้งหมด (ไม่มี `File` module, ไม่มี object storage ตั้งค่าไว้)
+- [ ] ยกเลิกเชื่อมต่อ Google ถูกบล็อกถ้าไม่มี `passwordHash` — **ยังไม่ implement** เพราะยังไม่มี Google OAuth เลย
+- [x] เปลี่ยนรหัสผ่านต้องยืนยันรหัสผ่านเดิมก่อนเสมอ
+- [x] เปลี่ยนอีเมลไม่อยู่ในฟอร์มนี้ (แสดงเป็น read-only เท่านั้น)
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `/profile` route | ไม่มี — ไม่มีหน้า UI ใด ๆ |
-| `PATCH /v1/auth/me` | ไม่มี endpoint นี้ — ไม่มี auth module ที่ implement แล้ว |
-| `POST /v1/files/presign` | ไม่มีตาราง `File` และไม่มี module จัดการไฟล์ (ดู [จัดเก็บไฟล์](/backend/file-storage)) |
-| เชื่อมต่อ Google จากหน้าโปรไฟล์ | ไม่มี Google OAuth เลย (ดู [สมัครสมาชิก](/auth/signup)) |
-| เปลี่ยนรหัสผ่าน | ไม่มี endpoint และไม่มีการตรวจรหัสผ่านเดิม |
+| `/profile` route | มีจริงที่ `app/[locale]/(app)/profile/page.tsx` |
+| `PATCH /v1/auth/me` | มีจริง แก้ `displayName`/`locale`/`theme` ได้ ใช้ field-level ability check |
+| แก้ `locale`/`theme` จากหน้าโปรไฟล์ | field ใน schema รองรับแล้ว แต่ UI ของหน้าโปรไฟล์ยังโชว์แค่ `displayName` — `theme` แก้ผ่าน [ตั้งค่า · ธีม](/features/settings-theme) แยกต่างหากตามที่สเปกกำหนด |
+| `POST /v1/files/presign` | ยังไม่มี — ไม่มีตาราง `File` ใน Prisma และไม่มี module จัดการไฟล์ (ดู [จัดเก็บไฟล์](/backend/file-storage)) |
+| เชื่อมต่อ Google จากหน้าโปรไฟล์ | ยังไม่มี Google OAuth เลย (ดู [สมัครสมาชิก](/auth/signup)) |
+| เปลี่ยนรหัสผ่าน | มีจริง — `POST /v1/auth/change-password` ตรวจรหัสผ่านเดิมด้วย `bcrypt.compare` ก่อนเสมอ |
 :::

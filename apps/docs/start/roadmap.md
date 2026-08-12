@@ -74,24 +74,24 @@ status: implemented
 
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
-| [ภาพรวมฟรอนต์เอนด์](/frontend/overview) | <Status value="in-progress" inline /> | |
-| [Data fetching (TanStack Query)](/frontend/data-fetching) | <Status value="in-progress" inline /> | มี provider แต่ไม่มี query hook สักตัว |
-| [ฟอร์ม (react-hook-form + zod)](/frontend/forms) | <Status value="planned" inline /> | ติดตั้ง lib ไว้แล้วแต่ไม่มี form component |
-| [ระบบ UI (shadcn/ui)](/frontend/ui-system) | <Status value="planned" inline /> | `button.tsx` เขียนเองไม่ใช่ของจริงจาก shadcn |
-| [i18n (next-intl)](/frontend/i18n) | <Status value="in-progress" inline /> | `defaultLocale` ยังเป็น `en` ขัดกับ ADR-0011 |
-| [ธีม & dark mode](/frontend/theming) | <Status value="planned" inline /> | ไม่มี theme provider เลย |
-| [Session ฝั่ง client](/frontend/auth-client) | <Status value="planned" inline /> | |
-| [สิทธิ์บน UI](/frontend/permissions-client) | <Status value="planned" inline /> | |
+| [ภาพรวมฟรอนต์เอนด์](/frontend/overview) | <Status value="implemented" inline /> | ทุกเสาหลักต่อสายครบแล้ว เหลือแค่ server prefetch/hydration ที่ยังเป็น client-fetch |
+| [Data fetching (TanStack Query)](/frontend/data-fetching) | <Status value="in-progress" inline /> | มี `query-keys.ts` + query/mutation hook ครบทุกทรัพยากร (users, roles, dashboard, me) แต่ยังไม่มี server prefetch + `HydrationBoundary` |
+| [ฟอร์ม (react-hook-form + zod)](/frontend/forms) | <Status value="implemented" inline /> | `Field`/`FieldError`, `applyServerErrors`, mutation hook ต่อฟอร์มทำงานจริง |
+| [ระบบ UI (shadcn/ui)](/frontend/ui-system) | <Status value="implemented" inline /> | `components.json` + `Button`/`Dialog`/`Select`/`Checkbox`/`Table`/ฯลฯ ผ่าน Radix จริงแล้ว |
+| [i18n (next-intl)](/frontend/i18n) | <Status value="implemented" inline /> | `defaultLocale` แก้เป็น `th` แล้ว ตรง ADR-0011 |
+| [ธีม & dark mode](/frontend/theming) | <Status value="implemented" inline /> | `next-themes` + CSS variable ต่อโหมด + `ThemeToggle` ทำงานจริง sync เข้า `User.theme` ด้วย |
+| [Session ฝั่ง client](/frontend/auth-client) | <Status value="in-progress" inline /> | session/use-session/single-flight refresh ทำงานจริง แต่ยังเป็น sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006 |
+| [สิทธิ์บน UI](/frontend/permissions-client) | <Status value="implemented" inline /> | `AbilityProvider`/`<Can>`/`ForbiddenState` ใช้กรองหน้า settings/users, settings/roles และเมนู |
 
 ### หน้าผลิตภัณฑ์
 
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
-| [แดชบอร์ด](/features/dashboard) | <Status value="planned" inline /> | ไม่มีหน้า UI ใด ๆ นอกจาก home page |
-| [ตั้งค่า · จัดการผู้ใช้](/features/settings-users) | <Status value="planned" inline /> | มีแค่ `POST /users` แบบ public |
-| [ตั้งค่า · Role & permission](/features/settings-roles) | <Status value="planned" inline /> | ไม่มีตาราง `Role`/`Permission` |
-| [ตั้งค่า · ธีม](/features/settings-theme) | <Status value="planned" inline /> | `User.theme` ยังไม่มีคอลัมน์ |
-| [โปรไฟล์](/features/profile) | <Status value="planned" inline /> | ไม่มี avatar upload, ไม่มี Google linking |
+| [แดชบอร์ด](/features/dashboard) | <Status value="implemented" inline /> | การ์ดสรุป + activity feed ทำงานจริง จาก `GET /v1/dashboard/summary` และ `GET /v1/audit-logs` |
+| [ตั้งค่า · จัดการผู้ใช้](/features/settings-users) | <Status value="implemented" inline /> | list/search/create/edit/delete (soft delete) ทำงานจริง กรองด้วย `accessibleBy` และ field-level ability |
+| [ตั้งค่า · Role & permission](/features/settings-roles) | <Status value="implemented" inline /> | สร้าง/แก้/ลบ role และติ๊ก permission ทำงานจริง พร้อม `ROLE_IN_USE` guard และล้างแคช ability เมื่อแก้สิทธิ์ |
+| [ตั้งค่า · ธีม](/features/settings-theme) | <Status value="implemented" inline /> | เลือกโหมดสีแบบ optimistic + sync เข้า `PATCH /v1/auth/me` ทำงานจริง |
+| [โปรไฟล์](/features/profile) | <Status value="in-progress" inline /> | แก้ `displayName`/ดู email/เปลี่ยนรหัสผ่านทำงานจริง — **ยังไม่มี** avatar upload และ Google account linking (ต้องใช้ object storage/Google credentials ที่ยังไม่ตั้งค่า) |
 
 ### คุณภาพโค้ด
 
@@ -119,15 +119,17 @@ status: implemented
 | --- | --- | --- | --- |
 | 1 | `enableCors()` เปล่า = อนุญาตทุก origin | `apps/api/src/main.ts` | ต้องเป็น allowlist ก่อนขึ้น production |
 | 2 | ไม่ validate env ตอนบูต | `apps/api/src/app.module.ts` | ตั้ง env ผิดจะไประเบิดตอน runtime แทนที่จะตายตั้งแต่บูต ดู [Config](/platform/config) |
-| 3 | `defaultLocale` ของ web เป็น `en` | `apps/web/src/i18n/routing.ts` | ขัดกับ [ADR-0011](/adr/0011-thai-default-locale) ที่ตกลงว่าไทยเป็นหลัก |
-| 4 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
-| 5 | ไม่มี test สักไฟล์ | ทั้ง repo | `vitest` เป็น devDependency และ `turbo test` มีอยู่ แต่ไม่มีไฟล์เทส |
-| 6 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
-| 7 | `button.tsx` เขียนเองไม่ใช่ของ shadcn | `apps/web/src/components/ui/button.tsx` | ไม่มี Radix, ไม่มี `asChild`, ใช้ token `bg-brand-600` ที่ไม่มีนิยาม ดู [ระบบ UI](/frontend/ui-system) |
-| 8 | `JwtAuthGuard` ไม่แยก expired จาก invalid | `apps/api/src/auth/jwt-auth.guard.ts` | ยังเป็น `AuthGuard("jwt")` เปล่า — client รีเฟรชเงียบ ๆ ไม่ได้ ต้องเตะผู้ใช้ออกทุก 15 นาที ดู [JWT & rotation](/auth/tokens) |
-| 9 | access/refresh token ไม่ตรวจ `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | token จากระบบอื่นที่แชร์ secret กันจะถูกยอมรับ |
-| 11 | ไม่มี script `typecheck` ที่ไหนเลย | ทุก `package.json` ในโปรเจกต์ | type error หลุดไปได้โดยไม่มีอะไรจับ ดู [Lint, format & type-check](/quality/code-quality) |
-| 12 | ไม่มี production Dockerfile/compose | `infra/docker/**`, root | มีแค่ dev stack ใช้งานจริงไม่ได้จนกว่าจะมี image สำหรับ production ดู [Docker & Traefik](/ops/docker-traefik) |
+| 3 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
+| 4 | ไม่มี test สักไฟล์ | ทั้ง repo | `vitest` เป็น devDependency และ `turbo test` มีอยู่ แต่ไม่มีไฟล์เทส (ยกเว้น `users.service.spec.ts` ที่มีอยู่แล้วก่อนหน้า) |
+| 5 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
+| 6 | `JwtAuthGuard` ไม่แยก expired จาก invalid | `apps/api/src/auth/jwt-auth.guard.ts` | ยังเป็น `AuthGuard("jwt")` เปล่า — client รีเฟรชเงียบ ๆ ไม่ได้ ต้องเตะผู้ใช้ออกทุก 15 นาที ดู [JWT & rotation](/auth/tokens) |
+| 7 | access/refresh token ไม่ตรวจ `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | token จากระบบอื่นที่แชร์ secret กันจะถูกยอมรับ |
+| 8 | ไม่มี script `typecheck` ที่ไหนเลย | ทุก `package.json` ในโปรเจกต์ | type error หลุดไปได้โดยไม่มีอะไรจับ ดู [Lint, format & type-check](/quality/code-quality) |
+| 9 | ไม่มี production Dockerfile/compose | `infra/docker/**`, root | มีแค่ dev stack ใช้งานจริงไม่ได้จนกว่าจะมี image สำหรับ production ดู [Docker & Traefik](/ops/docker-traefik) |
+| 10 | token ฝั่ง client เก็บใน sessionStorage ไม่ใช่ httpOnly cookie | `apps/web/src/lib/session.ts` | ขัดกับ [ADR-0006](/adr/0006-token-storage-httponly-cookie) — ยังไม่ได้ทำ เพราะเป็นงานเปลี่ยนสถาปัตยกรรม auth แยกต่างหาก ดู [Session ฝั่ง client](/frontend/auth-client) |
+| 11 | ไม่มี avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | ต้องมี object storage และ Google OAuth credentials ที่ยังไม่ได้ตั้งค่า ดู [โปรไฟล์](/features/profile) |
+
+✅ แก้แล้ว: `defaultLocale` ของ web เคยเป็น `en` (แก้เป็น `th` แล้ว), `button.tsx` เคยเขียนเองไม่ใช่ของ shadcn (แทนที่ด้วย component จาก Radix แล้ว), และ throttler bucket `"auth"` (5 req/60s) เคยถูกใช้กับทุก route โดยไม่ตั้งใจ (จำกัดเฉพาะ `/v1/auth/token` แล้วด้วย `@SkipThrottle`)
 
 ## ขอบเขตของเอกสาร
 

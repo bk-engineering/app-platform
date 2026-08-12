@@ -1,12 +1,12 @@
 ---
 title: Forms (react-hook-form + zod)
-status: planned
-statusNote: react-hook-form and @hookform/resolvers are installed, but no form component exists anywhere yet
+status: implemented
+statusNote: Field/FieldError, applyServerErrors, and real forms across the product pages (add/edit user, role permission editor, change password, profile) all work now
 ---
 
 # Forms (react-hook-form + zod)
 
-<Status value="planned" />
+<Status value="implemented" />
 
 Every form uses the same schema the API uses to validate — validation logic is never duplicated between client and server.
 
@@ -83,12 +83,13 @@ Turn off the browser's own validation (`required`, the `type="email"` popup) —
 `Field` is a thin wrapper that lays out label + input + error text according to the design tokens — it isn't part of react-hook-form itself. It lives in the UI system so every form looks the same.
 
 ```tsx
-// apps/web/src/components/ui/field.tsx — target
-export function Field({ label, error, children }: FieldProps) {
+// apps/web/src/components/ui/field.tsx
+export function Field({ label, htmlFor, error, hint, children, className }: FieldProps) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium">{label}</label>
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && <FieldError>{error}</FieldError>}
     </div>
   );
@@ -100,16 +101,21 @@ export function Field({ label, error, children }: FieldProps) {
 The server can reject a submission for reasons client-side zod can't check ahead of time (like "this email is already taken"). Those arrive as an [error envelope](/en/conventions/errors) and need converting back into react-hook-form field errors.
 
 ```ts
-// apps/web/src/lib/apply-server-errors.ts — target
-import type { UseFormReturn, FieldValues } from "react-hook-form";
-import type { ApiError } from "@/lib/api-client";
+// apps/web/src/lib/apply-server-errors.ts
+import type { UseFormReturn, FieldValues, Path } from "react-hook-form";
+import { ApiError } from "@/lib/api-client";
 
 export function applyServerErrors<T extends FieldValues>(form: UseFormReturn<T>, err: unknown) {
-  if (!isApiError(err) || err.status !== 422) throw err; // not a validation error — let an error boundary handle it
+  if (!(err instanceof ApiError) || err.status !== 422) throw err; // not a validation error — let an error boundary handle it
 
-  for (const detail of err.details ?? []) {
+  if (!err.details?.length) {
+    form.setError("root", { message: err.code, type: "server" });
+    return;
+  }
+
+  for (const detail of err.details) {
     if (detail.field) {
-      form.setError(detail.field as never, { message: detail.code, type: "server" });
+      form.setError(detail.field as Path<T>, { message: detail.code, type: "server" });
     } else {
       form.setError("root", { message: detail.code, type: "server" });
     }
@@ -126,21 +132,17 @@ export function applyServerErrors<T extends FieldValues>(form: UseFormReturn<T>,
 `onSubmit` never calls `fetch` directly — it always calls a mutation hook from [Data fetching](/en/frontend/data-fetching#mutations-invalidation). The reason: `isSubmitting` needs to reflect real network state (a mutation's `isPending`), not a hand-rolled flag, and a successful submit needs to invalidate the right queries immediately.
 
 ```ts
-// apps/web/src/hooks/use-login.ts — target
-export function useLogin() {
+// apps/web/src/hooks/use-users.ts
+export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (values: Login) =>
-      apiFetch("/api/auth/login", AuthOkResponseSchema, {
-        method: "POST",
-        body: JSON.stringify(values),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: sessionKeys.me });
-    },
+    mutationFn: (input: CreateUser) => request("/v1/users", UserSchema, { method: "POST", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.all }),
   });
 }
 ```
+
+The same shape repeats in `use-roles.ts` (create/update/delete role), `use-me.ts` (update profile/theme), and `use-change-password.ts`. The login page itself still calls `login()` directly instead of going through a mutation hook (not an exact match to spec, but the error handling is equivalent).
 
 ## Testing forms
 
@@ -157,9 +159,9 @@ describe("LoginSchema", () => {
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `LoginForm` using `zodResolver` | No form component exists anywhere in the project |
-| `Field` / `FieldError` in the UI system | `components/ui/` only has `button.tsx` |
-| `applyServerErrors` mapping 422s back onto the form | File doesn't exist |
-| `useLogin` and other mutation hooks | No auth or mutation hooks exist |
-| `react-hook-form` + `@hookform/resolvers` dependencies | **Installed** in `apps/web/package.json`, but nothing imports them yet |
+| forms using `zodResolver` | Real in every form: login, add/edit user, create/edit role, change password, profile |
+| `Field` / `FieldError` in the UI system | Real at `components/ui/field.tsx`, used everywhere |
+| `applyServerErrors` mapping 422s back onto the form | Real at `lib/apply-server-errors.ts` |
+| mutation hook per form | Real in `use-users.ts`, `use-roles.ts`, `use-me.ts`, `use-change-password.ts` |
+| `react-hook-form` + `@hookform/resolvers` dependencies | Installed and used throughout the app |
 :::

@@ -1,12 +1,12 @@
 ---
 title: Settings · User management
-status: planned
-statusNote: No UI at all — only a public POST /users exists
+status: implemented
+statusNote: /settings/users is real — list/search/create/edit/delete (soft delete) all work, filtered by accessibleBy and field-level ability
 ---
 
 # Settings · User management
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **This page is `User` CRUD fully filtered by [CASL](/en/auth/casl) — what `admin` sees and what `manager` sees must differ because of the same rules, not because of two separate components in two separate files.**
 
@@ -125,18 +125,18 @@ sequenceDiagram
 
 ## Checklist
 
-- [ ] `GET /v1/users` is filtered by `accessibleBy` on the server, not the client
-- [ ] Fields the current user cannot edit are never rendered in the form
-- [ ] The delete button always shows a confirmation dialog
-- [ ] `USER_LAST_ADMIN` shows as a readable toast, not a raw error code
-- [ ] Pagination (cursor or offset) matches whatever the backend implements
+- [x] `GET /v1/users` is filtered by `accessibleBy` on the server, not the client
+- [x] Fields the current user cannot edit are never rendered in the form (checked per-field with `ability.can("update", target, field)`)
+- [x] The delete button always shows a confirmation dialog
+- [x] `USER_LAST_ADMIN` shows as a readable toast, not a raw error code
+- [ ] Pagination (cursor or offset) matches whatever the backend implements — currently offset only (`page`/`limit`), single page at a time, no cursor/infinite scroll
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `/settings/users` route | None — no UI exists at all in `apps/web` |
-| `GET /v1/users` filtered by ability | A basic `GET /users` exists, with no guard and no CASL |
-| `UpdateUserSchema` | Only `CreateUserSchema` exists; there's no update schema yet |
-| `DELETE /v1/users/:id` as a soft delete | No delete endpoint exists, and `User` has no `deletedAt` column |
-| `USER_LAST_ADMIN` check | No `Role` table exists at all, so this can't be checked yet |
+| `/settings/users` route | Real, at `app/[locale]/(app)/settings/users/page.tsx` |
+| `GET /v1/users` filtered by ability | Real — filtered via `accessibleBy(ability, "read").User`, supports a `search` param too |
+| `UpdateUserSchema` | Complete: `displayName`, `email`, `status`, `roleIds` (every field checked against field-level ability before applying) |
+| `DELETE /v1/users/:id` as a soft delete | Real — sets `deletedAt` and checks `USER_LAST_ADMIN` before deleting |
+| `USER_LAST_ADMIN` check | Real — blocks deleting the last admin |
 :::

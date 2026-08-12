@@ -1,12 +1,12 @@
 ---
 title: Settings · Roles & permissions
-status: planned
-statusNote: No UI, and no Role/Permission tables exist at all
+status: implemented
+statusNote: /settings/roles is real — create/edit/delete a role and toggle permissions all work, with a ROLE_IN_USE guard and ability-cache invalidation
 ---
 
 # Settings · Roles & permissions
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **This page edits "which role holds which permission" — it does not create new permissions. Those are two different levels of action.**
 
@@ -138,18 +138,18 @@ If the ability is cached (see [CASL § Caching](/en/auth/casl)), someone holding
 
 ## Checklist
 
-- [ ] Permission checkboxes render only from real `Permission` rows, no free text
-- [ ] `isSystem = true` roles have no delete button and no editable `key` field
-- [ ] Deleting an in-use role returns an error naming the affected user count
-- [ ] There's a guard preventing zero `admin`s with `manage all`
-- [ ] Users are told new permissions apply with a delay if ability caching exists
+- [x] Permission checkboxes render only from real `Permission` rows, no free text
+- [x] `isSystem = true` roles have no delete button and no editable `key` field
+- [x] Deleting an in-use role returns an error naming the affected user count (`409 ROLE_IN_USE`)
+- [ ] There's a guard preventing zero `admin`s with `manage all` — not implemented yet (only the last-**user**-with-admin guard at [Settings · User management](/en/features/settings-users) exists; editing the admin role's own permissions isn't covered)
+- [ ] Users are told new permissions apply with a delay if ability caching exists — no UI copy for this yet, even though the backend now invalidates the cache automatically
 
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `/settings/roles` route | None — no UI exists at all |
-| `Role`, `Permission`, `RolePermission` tables | None exist at all (see [Data model](/en/architecture/data-model)) |
-| `PATCH /v1/roles/:id` | This endpoint doesn't exist |
-| `409 ROLE_IN_USE` | Not in the [error code catalog](/en/reference/error-codes) today |
-| CASL ability caching | Not implemented yet — see [CASL](/en/auth/casl) |
+| `/settings/roles` route | Real, at `app/[locale]/(app)/settings/roles/page.tsx` |
+| `Role`, `Permission`, `RolePermission` tables | Complete in the schema, with real seed data (see [Data model](/en/architecture/data-model)) |
+| `GET /v1/roles`, `GET /v1/roles/permissions`, `POST /v1/roles`, `PATCH /v1/roles/:id`, `DELETE /v1/roles/:id` | All exist |
+| `409 ROLE_IN_USE` | Real, with the affected user count in the message |
+| CASL ability caching | Already cached via Redis (see [CASL](/en/auth/casl)) — now also invalidates the cache for every holder of a role the moment its permissions change |
 :::

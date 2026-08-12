@@ -1,12 +1,12 @@
 ---
 title: Theming & dark mode
-status: planned
-statusNote: no theme provider, no next-themes, no toggle, no CSS variables for dark mode exist at all
+status: implemented
+statusNote: next-themes, ThemeProvider, per-mode CSS variables, and ThemeToggle all work, and it syncs to User.theme through the theme settings page
 ---
 
 # Theming & dark mode
 
-<Status value="planned" />
+<Status value="implemented" />
 
 Light/dark switches via a class on `<html>` plus CSS variables — not a prop threaded through the component tree. This means every component (including shadcn/ui's) picks up the right colors without re-rendering the whole tree when the theme flips.
 
@@ -36,7 +36,7 @@ pnpm --filter @app-platform/web add next-themes
 ```
 
 ```tsx
-// apps/web/src/app/providers.tsx — target
+// apps/web/src/app/providers.tsx
 "use client";
 
 import { useState } from "react";
@@ -94,16 +94,12 @@ Tailwind v4 uses `@custom-variant dark (&:where(.dark, .dark *))` (or `darkMode:
 }
 ```
 
-Every component uses `bg-background`, `text-foreground`, `bg-primary` — nowhere does a component file write `dark:bg-slate-900` directly. The difference between modes lives entirely in one layer: the CSS variable definitions.
-
-::: warning Today's Button doesn't participate in this system at all
-`components/ui/button.tsx` currently references `bg-brand-600` directly, which isn't just an undefined token (see [UI system](/en/frontend/ui-system#a-component-the-way-the-cli-would-generate-it)) — even if that token were defined, it would stay one fixed color and never switch with dark mode. It needs to move to `bg-primary` before it can support theming at all.
-:::
+Every component uses `bg-background`, `text-foreground`, `bg-primary` — nowhere does a component file write `dark:bg-slate-900` directly. The difference between modes lives entirely in one layer: the CSS variable definitions. `components/ui/button.tsx` also moved to `bg-primary`, so it switches with dark mode without any component-level changes.
 
 ## Toggle component
 
 ```tsx
-// apps/web/src/components/theme-toggle.tsx — target
+// apps/web/src/components/theme-toggle.tsx
 "use client";
 
 import { useTheme } from "next-themes";
@@ -130,25 +126,29 @@ Use `resolvedTheme`, not `theme` — `theme` might be `"system"`, which doesn't 
 
 ## Persisting the user's choice
 
-`next-themes` saves the value to `localStorage` automatically, which is enough for an MVP, but it doesn't sync across devices. The next step is to persist it to the user's profile through the API, so they see the same theme after logging in on another machine. See [Settings · Theme](/en/features/settings-theme) for the page that will combine this toggle with a full settings form.
+`next-themes` saves the value to `localStorage` automatically, which is enough for an MVP, but it doesn't sync across devices. [Settings · Theme](/en/features/settings-theme) already persists it to `User.theme` through the API, so the user sees the same theme after logging in on another machine.
 
 ```ts
-// target — sync the theme to the profile after a toggle
-const updateTheme = useMutation({
-  mutationFn: (theme: "light" | "dark" | "system") =>
-    apiFetch("/users/me/preferences", UserPreferencesSchema, {
-      method: "PATCH",
-      body: JSON.stringify({ theme }),
-    }),
-});
+// apps/web/src/hooks/use-me.ts — used by the theme settings page
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateMe) => request("/v1/auth/me", UserSchema, { method: "PATCH", body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sessionKeys.me }),
+  });
+}
 ```
+
+::: tip Not synced through a cookie at login yet
+The dark mode mechanism itself (`next-themes` + `localStorage`) is fully implemented, and the chosen value really is persisted to `User.theme`. But the "sync `User.theme` → cookie immediately on login" flow described in [Settings · Theme](/en/features/settings-theme#why-both-a-cookie-and-the-db) isn't implemented yet, because client sessions haven't moved to an httpOnly cookie (see [Client session](/en/frontend/auth-client)) — today the initial theme still comes only from `localStorage`/`prefers-color-scheme`.
+:::
 
 ## Avoiding a flash of the wrong theme
 
 `next-themes` injects an inline script into `<head>` that reads `localStorage` and sets the class **before** React hydrates — but `<html>` needs `suppressHydrationWarning`, or React will warn about mismatched attributes between the server render and the first client render.
 
 ```tsx
-// apps/web/src/app/[locale]/layout.tsx — target
+// apps/web/src/app/[locale]/layout.tsx
 <html lang={locale} suppressHydrationWarning>
 ```
 
@@ -159,10 +159,10 @@ const updateTheme = useMutation({
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `next-themes` dependency | Not in `package.json` at all |
-| `ThemeProvider` in `providers.tsx` | `providers.tsx` only has `QueryClientProvider` |
-| Per-mode CSS variables (`:root` / `.dark`) in `globals.css` | No dark mode definitions exist |
-| `ThemeToggle` component | File doesn't exist |
-| `suppressHydrationWarning` on `<html>` | Not needed yet — no theme provider means no mismatch |
-| Syncing theme to profile via the API | No endpoint or hook exists |
+| `next-themes` dependency | Installed and used |
+| `ThemeProvider` in `providers.tsx` | Real, wraps `QueryClientProvider` |
+| Per-mode CSS variables (`:root` / `.dark`) in `globals.css` | Complete: `background`, `foreground`, `card`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, `border`, `input`, `ring` |
+| `ThemeToggle` component | Real, at `components/theme-toggle.tsx`, used on every page via `(app)/layout.tsx` |
+| `suppressHydrationWarning` on `<html>` | Real |
+| Syncing theme to profile via the API | Real, via `PATCH /v1/auth/me` — syncing back to a cookie at login isn't implemented yet |
 :::

@@ -1,12 +1,12 @@
 ---
 title: Data fetching (TanStack Query)
 status: in-progress
-statusNote: QueryClientProvider works, but there isn't a single query or mutation hook in the project yet
+statusNote: query key convention plus a query/mutation hook for every resource (users, roles, dashboard, audit log, me) now exist — server prefetch + HydrationBoundary is still missing
 ---
 
 # Data fetching (TanStack Query)
 
-<Status value="in-progress" note="provider is ready; no hooks use it yet" />
+<Status value="in-progress" note="hooks are real now; server prefetch/hydration is the remaining gap" />
 
 Any request that needs caching, revalidation, or dedupe goes through TanStack Query. No `useEffect` + raw `fetch` in pages.
 
@@ -30,9 +30,24 @@ The problem isn't the line count — it's the behavior that's missing. No dedupe
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ApiError } from "@/lib/api-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: (failureCount, error) => {
+              // api-client already retries once after a token refresh —
+              // an ApiError past that point means the request is genuinely bad
+              if (error instanceof ApiError) return false;
+              return failureCount < 2;
+            },
+          },
+        },
+      }),
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -43,38 +58,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 ```
 
-This works today, but `new QueryClient()` sets no defaults. The target is to set `staleTime`/`retry` centrally here instead of repeating them in every hook.
-
-```ts
-// target — not implemented yet
-const [queryClient] = useState(
-  () =>
-    new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 30_000,     // most data doesn't need a refetch every time the tab regains focus
-          retry: (failureCount, error) =>
-            isApiError(error) && error.status >= 500 && failureCount < 2,
-        },
-      },
-    }),
-);
-```
+`retry` is centralized now: an `ApiError` (meaning the retried-after-refresh request still failed) doesn't retry further; other errors (network) retry up to 2 times. There's still no central `staleTime` — each hook sets its own based on how fresh that data needs to be.
 
 ::: tip `retry` needs to understand our own error shape
 TanStack Query's default retry (3 attempts, exponential backoff) doesn't distinguish `4xx` from `5xx` — retrying a `404` or `422` three times just makes the user wait longer for the same result. Always gate on the actual condition.
 :::
 
-## Query key convention
+## Query key convention <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/query-keys.ts — target
+// apps/web/src/hooks/query-keys.ts
 export const userKeys = {
   all: ["users"] as const,
-  list: (filters: UsersFilter) => [...userKeys.all, "list", filters] as const,
+  list: (filters: { page: number; search?: string }) => [...userKeys.all, "list", filters] as const,
   detail: (id: string) => [...userKeys.all, "detail", id] as const,
 };
 ```
+
+The real project has `sessionKeys`, `userKeys`, `roleKeys`, and `dashboardKeys` in this one file, following this shape.
 
 | Rule | Why |
 | --- | --- |
@@ -82,26 +83,26 @@ export const userKeys = {
 | Filters/params go inside the key | Different filters are different cache entries — otherwise a search page shows the previous filter's results |
 | Export one object, not scattered constants | "Who uses this key" is answerable from one place, which makes refactors safer |
 
-## Writing a query hook
+## Writing a query hook <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts — target
+// apps/web/src/hooks/use-users.ts
 import { useQuery } from "@tanstack/react-query";
-import { UsersListResponseSchema } from "@app-platform/contracts";
-import { apiFetch } from "@/lib/api-client";
-import { userKeys } from "./query-keys";
+import { paginatedSchema, UserSchema } from "@app-platform/contracts";
+import { request } from "@/lib/api-client";
+import { userKeys } from "@/hooks/query-keys";
 
-export function useUsers(filters: UsersFilter) {
+export function useUsers(page: number, search: string) {
   return useQuery({
-    queryKey: userKeys.list(filters),
+    queryKey: userKeys.list({ page, search: search || undefined }),
     queryFn: () =>
-      apiFetch(`/users?${toSearchParams(filters)}`, UsersListResponseSchema),
+      request(`/v1/users?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}`, paginatedSchema(UserSchema)),
     placeholderData: (prev) => prev, // avoids a flash of empty state while paginating
   });
 }
 ```
 
-`apiFetch` comes from [Client session](/en/frontend/auth-client#automatic-refresh) — it parses the response through the same schema the API uses to generate Swagger, so the type of `data` can never drift from what the server actually sends.
+`request` comes from `lib/api-client.ts` (see [Client session](/en/frontend/auth-client#automatic-refresh)) — it parses the response through the same schema the API uses to generate Swagger, so the type of `data` can never drift from what the server actually sends. The real project has a hook like this per resource: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`.
 
 ## Server prefetch + Hydration
 
@@ -144,10 +145,10 @@ export default async function UsersPage() {
 `dehydrate`/`HydrationBoundary` match queries by serializing the whole `queryKey` object. If the server prefetches with `userKeys.list({ page: 1 })` but the client calls `useUsers({ page: 1, sort: undefined })`, the two keys may not match depending on property order. Always build keys both sides through one shared helper — never hand-assemble the array twice.
 :::
 
-## Mutations + invalidation
+## Mutations + invalidation <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-update-user.ts — target
+// apps/web/src/hooks/use-users.ts
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
 
@@ -183,9 +184,9 @@ Bind `error.code` to a translated message in the locale files instead of showing
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `QueryClient` with central `staleTime`/`retry` defaults | `providers.tsx` creates a bare `new QueryClient()` — no default options |
-| query/mutation hooks in a `hooks/` folder | No data-fetching hook files exist anywhere in the project |
-| `apiFetch` client with single-flight refresh | `lib/api-client.ts` doesn't exist yet — see [Client session](/en/frontend/auth-client) |
-| Server prefetch + `HydrationBoundary` | No route does any data fetching besides `page.tsx`, which fetches nothing |
-| query key convention (`query-keys.ts`) | File doesn't exist |
+| `QueryClient` with central `staleTime`/`retry` defaults | `retry` is centralized (skips `ApiError` after a refresh) — no central `staleTime` yet, each hook sets its own |
+| query/mutation hooks in a `hooks/` folder | Exist for every resource: users, roles, dashboard, audit log, me, change-password |
+| `request` client with single-flight refresh | Real, in `lib/api-client.ts` — see [Client session](/en/frontend/auth-client) |
+| Server prefetch + `HydrationBoundary` | Still missing — every route fetches from the client after mount |
+| query key convention (`query-keys.ts`) | Real — `sessionKeys`, `userKeys`, `roleKeys`, `dashboardKeys` |
 :::

@@ -1,12 +1,12 @@
 ---
 title: ตั้งค่า · ธีม
-status: planned
-statusNote: ไม่มี UI และ User.theme ยังไม่มีคอลัมน์ในฐานข้อมูล
+status: implemented
+statusNote: หน้า /settings/theme ทำงานจริง เลือกโหมดสีแบบ optimistic + sync เข้า User.theme ผ่าน PATCH /v1/auth/me
 ---
 
 # ตั้งค่า · ธีม
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **ธีมมีสองที่เก็บ: cookie สำหรับ render ตอนแรกแบบไม่กระพริบ กับ `User.theme` สำหรับจำค่าข้ามอุปกรณ์ — สองที่นี้ต้อง sync กัน ไม่ใช่แข่งกัน**
 
@@ -99,17 +99,18 @@ flowchart TD
 
 ## เช็กลิสต์
 
-- [ ] เปลี่ยนธีมเป็น optimistic update เสมอ ไม่รอ API
-- [ ] cookie ถูกตั้งพร้อมกับ class บน `<html>` ในจังหวะเดียวกัน กัน FOUC
-- [ ] login สำเร็จ sync `User.theme` → cookie โดยอัตโนมัติ
-- [ ] บันทึกพลาดมี retry แบบไม่บล็อก UI
-- [ ] preview panel แสดง component จริงจาก [ระบบ UI](/frontend/ui-system) ไม่ใช่ mockup แยก
+- [x] เปลี่ยนธีมเป็น optimistic update เสมอ ไม่รอ API (`setTheme` ทันที แล้ว `PATCH` ตามหลัง)
+- [ ] cookie ถูกตั้งพร้อมกับ class บน `<html>` ในจังหวะเดียวกัน กัน FOUC — ยังไม่ implement คือใช้กลไก `localStorage` ของ `next-themes` ล้วน ๆ ไม่มี cookie เลย
+- [ ] login สำเร็จ sync `User.theme` → cookie โดยอัตโนมัติ — ยังไม่ implement เพราะยังไม่มี cookie ให้ sync (ดู [ธีม & dark mode](/frontend/theming#บันทึกค่าที่ผู้ใช้เลือกไว้))
+- [x] บันทึกพลาดมี retry แบบไม่บล็อก UI (retry แบบ delay 3 วินาทีครั้งเดียว ยังไม่ใช่ exponential backoff เต็มรูปแบบ)
+- [x] preview panel แสดง component จริงจาก [ระบบ UI](/frontend/ui-system) ไม่ใช่ mockup แยก
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `/settings/theme` route | ไม่มี — ไม่มีหน้า UI ใด ๆ |
-| `User.theme` คอลัมน์ | ไม่มีในฐานข้อมูลจริง (ดู [Data model](/architecture/data-model) — เป็นสเปกเป้าหมาย) |
-| `PATCH /v1/auth/me { theme }` | ไม่มี endpoint นี้ |
-| กลไก dark mode ฝั่ง frontend | ดูสถานะที่ [ธีม & dark mode](/frontend/theming) |
+| `/settings/theme` route | มีจริงที่ `app/[locale]/(app)/settings/theme/page.tsx` |
+| `User.theme` คอลัมน์ | มีจริงในฐานข้อมูล ค่าเริ่มต้น `"system"` |
+| `PATCH /v1/auth/me { theme }` | มีจริง ใช้ field-level ability check เดียวกับ `PATCH /v1/users/:id` |
+| กลไก dark mode ฝั่ง frontend | implement ครบแล้ว — ดูสถานะที่ [ธีม & dark mode](/frontend/theming) |
+| cookie สำหรับ SSR ไม่กระพริบ | ยังไม่มี — ธีมตอนโหลดหน้าแรกยังพึ่ง `localStorage`/`prefers-color-scheme` ของ `next-themes` เท่านั้น ไม่ได้อ่านจาก `User.theme` ตั้งแต่ HTML แรก |
 :::

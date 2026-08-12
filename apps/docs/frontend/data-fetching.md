@@ -1,12 +1,12 @@
 ---
 title: Data fetching (TanStack Query)
 status: in-progress
-statusNote: QueryClientProvider ใช้งานได้จริง แต่ไม่มี query หรือ mutation hook แม้แต่ตัวเดียวในโปรเจกต์
+statusNote: มี query key convention + query/mutation hook ครบทุกทรัพยากร (users, roles, dashboard, audit log, me) แล้ว แต่ยังไม่มี server prefetch + HydrationBoundary
 ---
 
 # Data fetching (TanStack Query)
 
-<Status value="in-progress" note="provider พร้อม แต่ยังไม่มี hook ใช้งานจริง" />
+<Status value="in-progress" note="hook ใช้งานจริงครบแล้ว เหลือ server prefetch/hydration" />
 
 ทุก request ที่ต้อง cache, revalidate หรือ dedupe ผ่าน TanStack Query ทั้งหมด ไม่ใช้ `useEffect` + `fetch` ตรง ๆ ในหน้าเว็บ
 
@@ -30,9 +30,24 @@ useEffect(() => {
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ApiError } from "@/lib/api-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: (failureCount, error) => {
+              // api-client already retries once after a token refresh —
+              // an ApiError past that point means the request is genuinely bad
+              if (error instanceof ApiError) return false;
+              return failureCount < 2;
+            },
+          },
+        },
+      }),
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -43,38 +58,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 ```
 
-ใช้งานได้จริงวันนี้ แต่ `new QueryClient()` ไม่ตั้ง default ใด ๆ — เป้าหมายคือตั้ง `staleTime`/`retry` กลางที่นี่ทีเดียว แทนที่จะเขียนซ้ำในทุก hook
-
-```ts
-// เป้าหมาย — ยังไม่ implement
-const [queryClient] = useState(
-  () =>
-    new QueryClient({
-      defaultOptions: {
-        queries: {
-          staleTime: 30_000,     // ข้อมูลส่วนใหญ่ไม่ต้อง refetch ทุกครั้งที่ focus กลับมา
-          retry: (failureCount, error) =>
-            isApiError(error) && error.status >= 500 && failureCount < 2,
-        },
-      },
-    }),
-);
-```
+`retry` ตั้งไว้กลางที่เดียวแล้ว: `ApiError` (แปลว่ายิงซ้ำหลัง refresh แล้วยังพัง) ไม่ retry ต่อ ส่วน error อื่น (network) retry ได้สูงสุด 2 ครั้ง — ยังไม่มี `staleTime` กลาง แต่ละ hook ตั้งเองตามความเหมาะสมของข้อมูล (ดูตัวอย่างใน [dashboard](/features/dashboard))
 
 ::: tip `retry` ต้องรู้จัก error shape ของเราเอง
 retry ค่า default ของ TanStack Query (3 ครั้ง, exponential backoff) ไม่แยก `4xx` กับ `5xx` — retry `404` หรือ `422` สามรอบมีแต่ทำให้ผู้ใช้รอนานขึ้นโดยผลลัพธ์เหมือนเดิม ต้องเช็คเงื่อนไขเองเสมอ
 :::
 
-## Query key convention
+## Query key convention <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/query-keys.ts — เป้าหมาย
+// apps/web/src/hooks/query-keys.ts
 export const userKeys = {
   all: ["users"] as const,
-  list: (filters: UsersFilter) => [...userKeys.all, "list", filters] as const,
+  list: (filters: { page: number; search?: string }) => [...userKeys.all, "list", filters] as const,
   detail: (id: string) => [...userKeys.all, "detail", id] as const,
 };
 ```
+
+โปรเจกต์จริงมี `sessionKeys`, `userKeys`, `roleKeys`, `dashboardKeys` ในไฟล์เดียวกัน ตามรูปแบบนี้
 
 | กฎ | เหตุผล |
 | --- | --- |
@@ -82,26 +83,26 @@ export const userKeys = {
 | ใส่ filter/param ลงใน key | filter ต่างกัน = cache entry คนละอัน ไม่งั้นหน้าค้นหาจะเห็นผลลัพธ์ของ filter ก่อนหน้า |
 | export เป็น object รวม ไม่กระจายทั่วโปรเจกต์ | หา "ใครใช้ key นี้บ้าง" ได้จากที่เดียว ตอน refactor ปลอดภัยกว่า |
 
-## เขียน query hook
+## เขียน query hook <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts — เป้าหมาย
+// apps/web/src/hooks/use-users.ts
 import { useQuery } from "@tanstack/react-query";
-import { UsersListResponseSchema } from "@app-platform/contracts";
-import { apiFetch } from "@/lib/api-client";
-import { userKeys } from "./query-keys";
+import { paginatedSchema, UserSchema } from "@app-platform/contracts";
+import { request } from "@/lib/api-client";
+import { userKeys } from "@/hooks/query-keys";
 
-export function useUsers(filters: UsersFilter) {
+export function useUsers(page: number, search: string) {
   return useQuery({
-    queryKey: userKeys.list(filters),
+    queryKey: userKeys.list({ page, search: search || undefined }),
     queryFn: () =>
-      apiFetch(`/users?${toSearchParams(filters)}`, UsersListResponseSchema),
+      request(`/v1/users?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}`, paginatedSchema(UserSchema)),
     placeholderData: (prev) => prev, // กันหน้ากะพริบตอนเปลี่ยนหน้า pagination
   });
 }
 ```
 
-`apiFetch` มาจาก [Session ฝั่ง client](/frontend/auth-client#refresh-อัตโนมัติ) — มัน parse response ผ่าน schema เดียวกับที่ API ใช้สร้าง Swagger ดังนั้น type ของ `data` ไม่มีทาง drift จากสิ่งที่ server ส่งจริง
+`request` มาจาก `lib/api-client.ts` (ดู [Session ฝั่ง client](/frontend/auth-client#refresh-อัตโนมัติ)) — มัน parse response ผ่าน schema เดียวกับที่ API ใช้สร้าง Swagger ดังนั้น type ของ `data` ไม่มีทาง drift จากสิ่งที่ server ส่งจริง โปรเจกต์จริงมี hook แบบนี้ครบทุกทรัพยากร: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`
 
 ## Server prefetch + Hydration
 
@@ -144,10 +145,10 @@ export default async function UsersPage() {
 `dehydrate`/`HydrationBoundary` จับคู่ query ด้วยการเทียบ `queryKey` แบบ serialize ทั้ง object ถ้า server prefetch ด้วย `userKeys.list({ page: 1 })` แต่ client เรียก `useUsers({ page: 1, sort: undefined })` สอง key อาจไม่ตรงกันตามลำดับ property ใช้ helper function ตัวเดียวสร้าง key ทั้งสองฝั่งเสมอ อย่าประกอบ array เองซ้ำที่
 :::
 
-## Mutation + invalidate
+## Mutation + invalidate <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-update-user.ts — เป้าหมาย
+// apps/web/src/hooks/use-users.ts
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
 
@@ -183,9 +184,9 @@ if (error) {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `QueryClient` ตั้ง `staleTime`/`retry` กลาง | `providers.tsx` สร้าง `new QueryClient()` เปล่า ไม่มี default options |
-| query/mutation hook ในโฟลเดอร์ `hooks/` | ไม่มีไฟล์ hook เกี่ยวกับ data fetching เลยในโปรเจกต์ |
-| `apiFetch` client พร้อม single-flight refresh | ยังไม่มีไฟล์ `lib/api-client.ts` — ดู [Session ฝั่ง client](/frontend/auth-client) |
-| Server prefetch + `HydrationBoundary` | ไม่มี route ที่ทำ data fetching เลยนอกจาก `page.tsx` ที่ไม่ดึงข้อมูลอะไร |
-| query key convention (`query-keys.ts`) | ไม่มีไฟล์ |
+| `QueryClient` ตั้ง `staleTime`/`retry` กลาง | `retry` ตั้งกลางแล้ว (ข้าม `ApiError` หลัง refresh) — ยังไม่มี `staleTime` กลาง แต่ละ hook ตั้งเอง |
+| query/mutation hook ในโฟลเดอร์ `hooks/` | มีครบทุกทรัพยากร: users, roles, dashboard, audit log, me, change-password |
+| `request` client พร้อม single-flight refresh | มีจริงที่ `lib/api-client.ts` — ดู [Session ฝั่ง client](/frontend/auth-client) |
+| Server prefetch + `HydrationBoundary` | ยังไม่มี — ทุก route ยังดึงข้อมูลจาก client หลัง mount |
+| query key convention (`query-keys.ts`) | มีจริง — `sessionKeys`, `userKeys`, `roleKeys`, `dashboardKeys` |
 :::

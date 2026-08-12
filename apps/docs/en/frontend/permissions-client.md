@@ -1,11 +1,12 @@
 ---
 title: Permissions in the UI
-status: planned
+status: implemented
+statusNote: AbilityProvider/<Can>/ForbiddenState are real and gate settings/users, settings/roles, and the nav — this page's code samples still need a pass to match the real @casl/react v7 API (see the Thai version for the accurate provider code)
 ---
 
 # Permissions in the UI
 
-<Status value="planned" />
+<Status value="implemented" note="working in the app; some code samples below are stale — see /frontend/permissions-client (Thai) for the accurate provider" />
 
 ::: danger Read this first
 Everything on this page is **user experience, not security.** `<Can>` hides buttons; it prevents nothing. Anyone can open devtools and call the API directly. Security lives in [server-side guards](/en/auth/casl), always and only.
@@ -227,10 +228,11 @@ Testing that something is *hidden* matters more than testing that it's shown —
 ::: warning Current code status
 | Target spec | Code today |
 | --- | --- |
-| `@casl/ability` + `@casl/react` | **Not installed** |
-| `AbilityProvider` + `<Can>` | Don't exist |
-| `GET /v1/auth/me` returning rules | No such endpoint — see [CASL](/en/auth/casl) |
-| Permission-filtered navigation | There is no navigation — `apps/web` has only a home page |
-| `<ForbiddenState />` | Doesn't exist; the only shadcn component is `button.tsx` |
-| Tests | `apps/web` has no test tooling at all |
+| `@casl/ability` + `@casl/react` | Both installed and used |
+| `AbilityProvider` + `<Can>` | Real, at `apps/web/src/lib/ability-context.tsx` — wraps `@casl/react` v7's own `AbilityProvider`/`useAbility`/`Can` rather than hand-rolling a context (this page's code sample above predates that and is stale) |
+| `GET /v1/auth/me` returning rules | Real — see [CASL](/en/auth/casl) |
+| Permission-filtered navigation | Real, at `apps/web/src/components/app-nav.tsx` — filters the users/roles links by real ability |
+| `<ForbiddenState />` | Real, at `apps/web/src/components/forbidden-state.tsx`, gating `settings/users` and `settings/roles` |
+| Server prefetch + hydrate | Still missing — `AbilityProvider` fires a client-side `useQuery` only |
+| Tests | No test tooling in `apps/web` yet — existing ability tests are API-side only (`ability.factory.spec.ts`) |
 :::

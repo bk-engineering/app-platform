@@ -74,24 +74,24 @@ Badge meanings live at [Status legend](/en/reference/status-legend).
 
 | Page | Status | Note |
 | --- | --- | --- |
-| [Frontend overview](/en/frontend/overview) | <Status value="in-progress" inline /> | |
-| [Data fetching (TanStack Query)](/en/frontend/data-fetching) | <Status value="in-progress" inline /> | provider exists, zero query hooks |
-| [Forms (react-hook-form + zod)](/en/frontend/forms) | <Status value="planned" inline /> | libs installed, no form component |
-| [UI system (shadcn/ui)](/en/frontend/ui-system) | <Status value="planned" inline /> | `button.tsx` isn't real shadcn |
-| [i18n (next-intl)](/en/frontend/i18n) | <Status value="in-progress" inline /> | `defaultLocale` still `en`, contradicts ADR-0011 |
-| [Theming & dark mode](/en/frontend/theming) | <Status value="planned" inline /> | no theme provider at all |
-| [Client session](/en/frontend/auth-client) | <Status value="planned" inline /> | |
-| [Permissions in the UI](/en/frontend/permissions-client) | <Status value="planned" inline /> | |
+| [Frontend overview](/en/frontend/overview) | <Status value="implemented" inline /> | every pillar is wired up now; server prefetch/hydration is still client-fetch only |
+| [Data fetching (TanStack Query)](/en/frontend/data-fetching) | <Status value="in-progress" inline /> | `query-keys.ts` plus query/mutation hooks for every resource (users, roles, dashboard, me) now exist; still no server prefetch + `HydrationBoundary` |
+| [Forms (react-hook-form + zod)](/en/frontend/forms) | <Status value="implemented" inline /> | `Field`/`FieldError`, `applyServerErrors`, and a mutation hook per form all work |
+| [UI system (shadcn/ui)](/en/frontend/ui-system) | <Status value="implemented" inline /> | `components.json` plus real Radix-backed `Button`/`Dialog`/`Select`/`Checkbox`/`Table`/etc. |
+| [i18n (next-intl)](/en/frontend/i18n) | <Status value="implemented" inline /> | `defaultLocale` fixed to `th`, matching ADR-0011 |
+| [Theming & dark mode](/en/frontend/theming) | <Status value="implemented" inline /> | `next-themes` + per-mode CSS variables + `ThemeToggle` work, and it syncs to `User.theme` |
+| [Client session](/en/frontend/auth-client) | <Status value="in-progress" inline /> | session/use-session/single-flight refresh work; still sessionStorage, not the httpOnly cookie ADR-0006 calls for |
+| [Permissions in the UI](/en/frontend/permissions-client) | <Status value="implemented" inline /> | `AbilityProvider`/`<Can>`/`ForbiddenState` now gate settings/users, settings/roles, and the nav |
 
 ### Product features
 
 | Page | Status | Note |
 | --- | --- | --- |
-| [Dashboard](/en/features/dashboard) | <Status value="planned" inline /> | no UI beyond the home page |
-| [Settings · User management](/en/features/settings-users) | <Status value="planned" inline /> | only a public `POST /users` |
-| [Settings · Roles & permissions](/en/features/settings-roles) | <Status value="planned" inline /> | no `Role`/`Permission` tables |
-| [Settings · Theme](/en/features/settings-theme) | <Status value="planned" inline /> | no `User.theme` column |
-| [Profile](/en/features/profile) | <Status value="planned" inline /> | no avatar upload, no Google linking |
+| [Dashboard](/en/features/dashboard) | <Status value="implemented" inline /> | summary cards + activity feed work, backed by `GET /v1/dashboard/summary` and `GET /v1/audit-logs` |
+| [Settings · User management](/en/features/settings-users) | <Status value="implemented" inline /> | list/search/create/edit/delete (soft delete) all work, filtered by `accessibleBy` and field-level ability checks |
+| [Settings · Roles & permissions](/en/features/settings-roles) | <Status value="implemented" inline /> | create/edit/delete a role and toggle permissions all work, with a `ROLE_IN_USE` guard and ability-cache invalidation on change |
+| [Settings · Theme](/en/features/settings-theme) | <Status value="implemented" inline /> | optimistic mode picker synced to `PATCH /v1/auth/me` works |
+| [Profile](/en/features/profile) | <Status value="in-progress" inline /> | editing `displayName`, viewing email, and changing password all work — avatar upload and Google account linking are still **not implemented** (need object storage / Google credentials that aren't configured) |
 
 ### Quality
 
@@ -119,15 +119,17 @@ Things we already know are wrong or contradict the spec, most urgent first.
 | --- | --- | --- | --- |
 | 1 | Bare `enableCors()` allows every origin | `apps/api/src/main.ts` | Must become an allowlist before production |
 | 2 | Env is never validated at boot | `apps/api/src/app.module.ts` | Misconfiguration explodes at runtime instead of failing to start — see [Config](/en/platform/config) |
-| 3 | Web `defaultLocale` is `en` | `apps/web/src/i18n/routing.ts` | Contradicts [ADR-0011](/en/adr/0011-thai-default-locale) |
-| 4 | Redis is provisioned but unused | `docker-compose.yml` | Decide what it's for (throttler store / refresh denylist) or remove it |
-| 5 | No tests at all | whole repo | `vitest` is a devDependency and `turbo test` exists, but there are no test files |
-| 6 | No CI | no `.github/` | Nothing stops a broken build from merging — see [CI/CD](/en/ops/ci-cd) |
-| 7 | `button.tsx` is hand-written, not shadcn | `apps/web/src/components/ui/button.tsx` | No Radix, no `asChild`, uses an undefined `bg-brand-600` token — see [UI system](/en/frontend/ui-system) |
-| 8 | `JwtAuthGuard` doesn't distinguish expired from invalid | `apps/api/src/auth/jwt-auth.guard.ts` | Still a bare `AuthGuard("jwt")` — the client can't refresh silently and gets logged out every 15 minutes — see [JWT & rotation](/en/auth/tokens) |
-| 9 | Access/refresh tokens don't check `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | A token from another system sharing the same secret would be accepted |
-| 11 | No `typecheck` script anywhere | every `package.json` in the project | Type errors can slip through uncaught — see [Lint, format & type-check](/en/quality/code-quality) |
-| 12 | No production Dockerfile/compose | `infra/docker/**`, root | Only the dev stack works today, nothing deployable — see [Docker & Traefik](/en/ops/docker-traefik) |
+| 3 | Redis is provisioned but unused | `docker-compose.yml` | Decide what it's for (throttler store / refresh denylist) or remove it |
+| 4 | No tests at all | whole repo | `vitest` is a devDependency and `turbo test` exists, but there are almost no test files (`users.service.spec.ts` is the exception) |
+| 5 | No CI | no `.github/` | Nothing stops a broken build from merging — see [CI/CD](/en/ops/ci-cd) |
+| 6 | `JwtAuthGuard` doesn't distinguish expired from invalid | `apps/api/src/auth/jwt-auth.guard.ts` | Still a bare `AuthGuard("jwt")` — the client can't refresh silently and gets logged out every 15 minutes — see [JWT & rotation](/en/auth/tokens) |
+| 7 | Access/refresh tokens don't check `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | A token from another system sharing the same secret would be accepted |
+| 8 | No `typecheck` script anywhere | every `package.json` in the project | Type errors can slip through uncaught — see [Lint, format & type-check](/en/quality/code-quality) |
+| 9 | No production Dockerfile/compose | `infra/docker/**`, root | Only the dev stack works today, nothing deployable — see [Docker & Traefik](/en/ops/docker-traefik) |
+| 10 | Client tokens live in sessionStorage, not an httpOnly cookie | `apps/web/src/lib/session.ts` | Contradicts [ADR-0006](/en/adr/0006-token-storage-httponly-cookie) — not done yet, it's a separate auth-architecture change — see [Client session](/en/frontend/auth-client) |
+| 11 | No avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | Needs object storage and Google OAuth credentials that aren't configured — see [Profile](/en/features/profile) |
+
+Fixed since the last pass: web `defaultLocale` was `en` (now `th`), `button.tsx` was hand-written instead of real shadcn (now Radix-backed), and the `"auth"` throttle bucket (5 req/60s) was accidentally applied to every route instead of just `/v1/auth/token` (scoped with `@SkipThrottle`).
 
 ## Documentation scope
 

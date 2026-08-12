@@ -1,12 +1,12 @@
 ---
 title: ตั้งค่า · Role & permission
-status: planned
-statusNote: ไม่มี UI และไม่มีตาราง Role/Permission เลย
+status: implemented
+statusNote: หน้า /settings/roles ทำงานจริง — สร้าง/แก้/ลบ role และติ๊ก permission ได้ พร้อม ROLE_IN_USE guard และล้างแคช ability
 ---
 
 # ตั้งค่า · Role & permission
 
-<Status value="planned" />
+<Status value="implemented" />
 
 > **หน้านี้แก้ไข "role ไหนมี permission อะไร" ไม่ใช่หน้าที่สร้าง permission ใหม่ — สอง action นี้ต่างระดับกัน**
 
@@ -138,18 +138,18 @@ sequenceDiagram
 
 ## เช็กลิสต์
 
-- [ ] checkbox permission render จาก `Permission` ที่มีจริงเท่านั้น ไม่มี free text
-- [ ] role ที่ `isSystem = true` ไม่มีปุ่มลบและไม่มีช่องแก้ `key`
-- [ ] ลบ role ที่มีคนถืออยู่ตอบ error ที่บอกจำนวนผู้ใช้ที่กระทบ
-- [ ] มี guard กันไม่ให้ `admin` เหลือ 0 คนที่มี `manage all`
-- [ ] แจ้งผู้ใช้ว่า permission ใหม่มีผลล่าช้าถ้ามีการแคช ability
+- [x] checkbox permission render จาก `Permission` ที่มีจริงเท่านั้น ไม่มี free text
+- [x] role ที่ `isSystem = true` ไม่มีปุ่มลบและไม่มีช่องแก้ `key`
+- [x] ลบ role ที่มีคนถืออยู่ตอบ error ที่บอกจำนวนผู้ใช้ที่กระทบ (`409 ROLE_IN_USE`)
+- [ ] มี guard กันไม่ให้ `admin` เหลือ 0 คนที่มี `manage all` — ยังไม่ implement (มีแค่ guard กันลบ **ผู้ใช้** admin คนสุดท้ายที่ [ตั้งค่า · จัดการผู้ใช้](/features/settings-users) เท่านั้น ยังไม่ครอบกรณีแก้ permission ของ role admin เอง)
+- [ ] แจ้งผู้ใช้ว่า permission ใหม่มีผลล่าช้าถ้ามีการแคช ability — ยังไม่มีข้อความนี้ในหน้า UI แม้ backend จะ invalidate แคชให้อัตโนมัติแล้วก็ตาม
 
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| `/settings/roles` route | ไม่มี — ไม่มีหน้า UI ใด ๆ |
-| ตาราง `Role`, `Permission`, `RolePermission` | ไม่มีเลยสักตาราง (ดู [Data model](/architecture/data-model)) |
-| `PATCH /v1/roles/:id` | ไม่มี endpoint นี้ |
-| `409 ROLE_IN_USE` | ไม่มีใน [error code catalog](/reference/error-codes) ตอนนี้ |
-| CASL ability caching | ยังไม่ implement — ดู [CASL](/auth/casl) |
+| `/settings/roles` route | มีจริงที่ `app/[locale]/(app)/settings/roles/page.tsx` |
+| ตาราง `Role`, `Permission`, `RolePermission` | มีครบใน schema พร้อม seed จริง (ดู [Data model](/architecture/data-model)) |
+| `GET /v1/roles`, `GET /v1/roles/permissions`, `POST /v1/roles`, `PATCH /v1/roles/:id`, `DELETE /v1/roles/:id` | มีครบ |
+| `409 ROLE_IN_USE` | มีจริง พร้อมจำนวนผู้ใช้ที่กระทบใน message |
+| CASL ability caching | แคชด้วย Redis อยู่แล้ว (ดู [CASL](/auth/casl)) — ตอนนี้เพิ่ม invalidate แคชของผู้ถือ role นั้นทันทีเมื่อแก้ permission |
 :::
