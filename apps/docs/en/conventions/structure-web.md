@@ -25,7 +25,8 @@ apps/web/src/
 │   ├── user/                useMe, useUsers, useChangePassword
 │   └── role/                useRoles
 ├── features/                project-specific features — replaced/deleted on fork
-│   ├── dashboard/, users/, roles/, settings/, shell/
+│   ├── dashboard/            ui/ (SummaryWidget, ActivityWidget), use-dashboard.ts
+│   ├── users/, roles/, settings/, shell/
 ├── shared/                  generic utilities with no domain meaning
 │   └── lib/                 cn()
 └── proxy.ts                 next-intl middleware (Next 16's rename of middleware.ts)
@@ -67,6 +68,12 @@ Breaking these rules is an ESLint error at build time, not just a review comment
 | `shared/` | Utilities with no domain awareness at all | `cn()` |
 
 One judgment call worth flagging: `features/shell/` (sidebar, user menu) looks "stable" but hardcodes the actual menu items per feature, so it's classified as `features/`, not `core/` — a forked project with a different menu edits here.
+
+## When to split into segments
+
+Files in each `core/*`, `entities/*`, `features/*` module always start flat in one folder — **once a module has 2 or more files of the same kind (e.g. components), split them into a sub-segment**, using the same names everywhere: `ui/` (components), `hooks/` (query/mutation hooks), `lib/` (React-free helpers). For example, `features/dashboard/` has two components — `SummaryWidget` and `ActivityWidget` — so they live under `features/dashboard/ui/`; `features/roles/` has just one (`RoleDialog`), so it doesn't split yet.
+
+A segment doesn't get its own `index.ts` — the feature's root barrel stays the only entry point (`export { SummaryWidget } from "./ui/summary-widget"`). Don't pre-create `ui/`, `hooks/`, `lib/` before there's a file to put in them — an empty folder doesn't enforce any consistency, it just adds nesting for nothing. Different features looking structurally different is fine and expected — it should reflect each feature's actual file count, not be normalized away.
 
 ## Query keys are split by owner
 

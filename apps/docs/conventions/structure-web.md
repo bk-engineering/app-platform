@@ -25,7 +25,8 @@ apps/web/src/
 │   ├── user/                useMe, useUsers, useChangePassword
 │   └── role/                useRoles
 ├── features/                ฟีเจอร์เฉพาะโปรเจกต์ — ถูกแทนที่/ลบได้เวลา fork
-│   ├── dashboard/, users/, roles/, settings/, shell/
+│   ├── dashboard/            ui/ (SummaryWidget, ActivityWidget), use-dashboard.ts
+│   ├── users/, roles/, settings/, shell/
 ├── shared/                  util ทั่วไป ไม่มีความหมายทาง domain
 │   └── lib/                 cn()
 └── proxy.ts                 next-intl middleware (ชื่อใหม่ของ middleware.ts ใน Next 16)
@@ -67,6 +68,12 @@ flowchart LR
 | `shared/` | util ที่ไม่รู้จัก domain เลย | `cn()` |
 
 จุดที่ต้องตัดสินใจเอง (ไม่ใช่กฎตายตัว): `features/shell/` (sidebar, user menu) แม้จะดู "คงที่" แต่ hardcode รายการเมนูตามฟีเจอร์จริง จึงจัดเป็น `features/` ไม่ใช่ `core/` — ถ้าโปรเจกต์ fork ไปมีเมนูต่างจากเดิม จุดนี้คือจุดที่ต้องแก้
+
+## แตก segment เมื่อไหร่
+
+ไฟล์ในแต่ละ `core/*`, `entities/*`, `features/*` เริ่มจากวางแบนไว้ในโฟลเดอร์เดียวก่อนเสมอ — **เมื่อไฟล์ประเภทเดียวกัน (เช่น component) มีตั้งแต่ 2 ไฟล์ขึ้นไปในโมดูลเดียว ให้แยกเข้า segment ย่อย** ใช้ชื่อเดียวกันทุกที่: `ui/` (component), `hooks/` (query/mutation hook), `lib/` (helper ที่ไม่ผูก React) เช่น `features/dashboard/` มี `SummaryWidget` กับ `ActivityWidget` สองตัวจึงอยู่ใน `features/dashboard/ui/` ส่วน `features/roles/` มี `RoleDialog` ไฟล์เดียวยังไม่ต้องแยก
+
+segment ย่อยไม่ต้องมี `index.ts` ของตัวเอง — barrel ของ feature ที่ root เป็นทางออกเดียวเสมอ (`export { SummaryWidget } from "./ui/summary-widget"`) อย่าสร้าง `ui/`, `hooks/`, `lib/` ไว้ล่วงหน้าทั้งที่ยังไม่มีไฟล์ — โฟลเดอร์เปล่าไม่ได้บังคับความสม่ำเสมออะไร แค่เพิ่มการ nest โดยเปล่าประโยชน์ ต่างจาก feature กันโครงไม่เหมือนกันได้ตามจำนวนไฟล์จริง ไม่ใช่ปัญหา
 
 ## Query key แยกตามเจ้าของ
 
