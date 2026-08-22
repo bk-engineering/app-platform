@@ -1,12 +1,11 @@
 ---
 title: Security checklist
-status: planned
-statusNote: "CORS is wide open, there's no helmet, and there's no rate limiting"
+status: implemented
 ---
 
 # Security checklist
 
-<Status value="planned" note="Three basic gaps are still open today" />
+<Status value="implemented" />
 
 > **This isn't security theory. It's the list of things that must close before this boilerplate is ready for real traffic.**
 
@@ -31,20 +30,7 @@ This page covers the first three layers (CORS, headers, rate limiting) — auth 
 
 ## 1. CORS
 
-### The problem today
-
-```ts
-// apps/api/src/main.ts
-app.enableCors();
-```
-
-`enableCors()` with no options means **`Access-Control-Allow-Origin: *`** — any website on the internet can call this API from a browser. If any endpoint reads cookies or uses credentials, this gets dangerous fast: the browser can attach a logged-in user's credentials to a request from an entirely different site, without the user knowing.
-
-::: danger Open CORS plus an httpOnly cookie is a CSRF hole
-The [refresh token lives in an httpOnly cookie](/en/auth/tokens). Without a restricted CORS origin, another site can embed a `<script>` that runs `fetch(apiUrl, { credentials: "include" })`, and the browser attaches the user's cookie automatically. This must be fixed before production — it is not a "later" item.
-:::
-
-### Target
+### The real thing today
 
 ```ts
 // apps/api/src/main.ts
@@ -60,11 +46,7 @@ app.enableCors({
 
 ## 2. Security headers (helmet)
 
-### The problem today
-
-There is no `helmet` in `apps/api`'s `package.json` at all — no `Content-Security-Policy`, no `X-Content-Type-Options`, no `Strict-Transport-Security`. Every response header ships with Express's plain defaults.
-
-### Target
+### The real thing today
 
 ```ts
 // apps/api/src/main.ts
@@ -98,11 +80,7 @@ A common misconception is "APIs can't have XSS because they don't render HTML." 
 
 ## 3. Rate limiting
 
-### The problem today
-
-There's no `@nestjs/throttler` or any rate-limiting mechanism in the system — `POST /users` (see [Signup](/en/auth/signup)) and the login endpoint accept unlimited requests from a single IP, leaving password brute force and account-creation spam wide open.
-
-### Target
+### The real thing today
 
 ```ts
 // apps/api/src/app.module.ts
@@ -116,9 +94,11 @@ ThrottlerModule.forRoot([
 // apps/api/src/auth/auth.controller.ts
 @Throttle({ auth: { limit: 5, ttl: 60_000 } })
 @Public()
-@Post("login")
-login(@Body() dto: Login) { … }
+@Post("token")
+token(@Body() body: TokenRequestDto) { … }
 ```
+
+`POST /v1/users` isn't a public signup endpoint (it requires login plus `create User` permission — see [API conventions](/en/conventions/api-conventions)), so the `default` quota is enough for it — `forgot-password` in the table below is still a target because that endpoint itself is still planned ([Forgot password](/en/auth/forgot-password)).
 
 | Endpoint | Recommended quota | Why |
 | --- | --- | --- |
@@ -150,19 +130,11 @@ There's no dependency scanning (`npm audit` / Snyk / Dependabot) wired to CI, be
 
 ## Checklist
 
-- [ ] `enableCors()` restricts `origin` from `CORS_ORIGINS`
-- [ ] `helmet()` is enabled with a CSP that sets `defaultSrc`, `frameAncestors`
-- [ ] `ThrottlerModule` covers the whole app, with stricter limits on auth endpoints
+- [x] `enableCors()` restricts `origin` from `CORS_ORIGINS`
+- [x] `helmet()` is enabled with a CSP that sets `defaultSrc`, `frameAncestors`
+- [x] `ThrottlerModule` covers the whole app, with stricter limits on auth endpoints
 - [ ] `forgot-password` is limited by both IP and target email
 - [ ] Dependency scanning is in CI (once CI exists)
-- [ ] No secret in [`EnvSchema`](/en/platform/config) has a default
+- [x] No secret in [`EnvSchema`](/en/platform/config) has a default
 
-::: warning Current code status
-| Target spec | Code today |
-| --- | --- |
-| CORS restricted to allowed origins | `app.enableCors()` has no options — wide open to every origin |
-| `helmet()` sets security headers | No `helmet` in `package.json` at all |
-| `ThrottlerModule` app-wide | No `@nestjs/throttler` — no rate limiting anywhere |
-| Stricter throttle on auth endpoints | None, because there's no throttler at all |
-| Dependency scanning in CI | No CI — see [CI/CD](/en/ops/ci-cd) |
-:::
+CORS restricts origins via `CORS_ORIGINS`, `helmet()` sets security headers, and `ThrottlerModule` covers the whole app with a stricter limit on `POST /v1/auth/token` — all three layers are done. Dependency scanning in CI is still missing because there's no CI at all yet — see [CI/CD](/en/ops/ci-cd).

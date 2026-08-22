@@ -94,17 +94,17 @@ Tailwind v4 uses `@custom-variant dark (&:where(.dark, .dark *))` (or `darkMode:
 }
 ```
 
-Every component uses `bg-background`, `text-foreground`, `bg-primary` — nowhere does a component file write `dark:bg-slate-900` directly. The difference between modes lives entirely in one layer: the CSS variable definitions. `components/ui/button.tsx` also moved to `bg-primary`, so it switches with dark mode without any component-level changes.
+Every component uses `bg-background`, `text-foreground`, `bg-primary` — nowhere does a component file write `dark:bg-slate-900` directly. The difference between modes lives entirely in one layer: the CSS variable definitions. `core/ui/button.tsx` also moved to `bg-primary`, so it switches with dark mode without any component-level changes.
 
 ## Toggle component
 
 ```tsx
-// apps/web/src/components/theme-toggle.tsx
+// apps/web/src/features/settings/theme-toggle.tsx
 "use client";
 
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -129,7 +129,7 @@ Use `resolvedTheme`, not `theme` — `theme` might be `"system"`, which doesn't 
 `next-themes` saves the value to `localStorage` automatically, which is enough for an MVP, but it doesn't sync across devices. [Settings · Theme](/en/features/settings-theme) already persists it to `User.theme` through the API, so the user sees the same theme after logging in on another machine.
 
 ```ts
-// apps/web/src/hooks/use-me.ts — used by the theme settings page
+// apps/web/src/entities/user/use-me.ts — used by the theme settings page
 export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -162,7 +162,7 @@ The dark mode mechanism itself (`next-themes` + `localStorage`) is fully impleme
 | `next-themes` dependency | Installed and used |
 | `ThemeProvider` in `providers.tsx` | Real, wraps `QueryClientProvider` |
 | Per-mode CSS variables (`:root` / `.dark`) in `globals.css` | Complete: `background`, `foreground`, `card`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, `border`, `input`, `ring` |
-| `ThemeToggle` component | Real, at `components/theme-toggle.tsx`, used on every page via `(app)/layout.tsx` |
+| `ThemeToggle` component | Real, at `features/settings/theme-toggle.tsx`, used on every page via `(app)/layout.tsx` |
 | `suppressHydrationWarning` on `<html>` | Real |
 | Syncing theme to profile via the API | Real, via `PATCH /v1/auth/me` — syncing back to a cookie at login isn't implemented yet |
 :::

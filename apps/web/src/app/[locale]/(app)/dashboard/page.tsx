@@ -3,16 +3,16 @@
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollText, Users as UsersIcon, RefreshCw } from "lucide-react";
-import { useAbility } from "@/lib/ability-context";
-import { canUnconditionally } from "@/lib/ability-helpers";
-import { useSession } from "@/hooks/use-session";
-import { getMe } from "@/lib/auth";
-import { sessionKeys } from "@/hooks/query-keys";
-import { useAuditLog, useDashboardSummary } from "@/hooks/use-dashboard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAbility } from "@/core/permissions";
+import { canUnconditionally } from "@/core/permissions";
+import { useSession } from "@/core/auth";
+import { getMe } from "@/core/auth";
+import { sessionKeys } from "@/core/auth";
+import { useAuditLog, useDashboardSummary } from "@/features/dashboard";
+import { Skeleton } from "@/core/ui";
+import { EmptyState } from "@/core/ui";
+import { Button } from "@/core/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui";
 
 function StatCard({ label, value }: { label: string; value: number | undefined }) {
   return (

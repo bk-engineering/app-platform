@@ -1,12 +1,12 @@
 ---
 title: กลยุทธ์การเทส
 status: planned
-statusNote: "vitest ติดตั้งแล้วและมี script test แต่ไม่มีไฟล์เทสเลยสักไฟล์เดียวในทั้ง repo"
+statusNote: "vitest ติดตั้งแล้วและมี script test มีเทส 3 ไฟล์ (auth, users, ability) แต่ยังไม่มี controller/e2e test"
 ---
 
 # กลยุทธ์การเทส
 
-<Status value="planned" note="มี test runner แล้ว coverage เป็นศูนย์" />
+<Status value="planned" note="มี test runner แล้ว มีเทส 3 ไฟล์ ยังไม่มี controller/e2e" />
 
 > **เทสที่ดีที่สุดคือเทสที่จับได้ว่าอะไร *ทำไม่ได้* ไม่ใช่แค่ยืนยันว่าอะไร *ทำได้* — โดยเฉพาะเทสด้านสิทธิ์**
 

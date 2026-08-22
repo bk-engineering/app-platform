@@ -99,6 +99,6 @@ If you're about to build a new page, a sane order is i18n (already there) → da
 | query/mutation hooks powering every page | Hooks exist per resource (`use-users`, `use-roles`, `use-dashboard`, `use-me`, etc.) — server prefetch is still missing |
 | forms via react-hook-form + zod | `Field`/`FieldError`/`applyServerErrors` are real and used in every form |
 | shadcn/ui as a full system | `components.json` plus Radix-backed components (`Button`, `Dialog`, `Select`, `Checkbox`, `Table`, etc.) |
-| `apps/web` consuming `packages/contracts` | Every hook in `hooks/` imports schemas from contracts |
+| `apps/web` consuming `packages/contracts` | Every hook in `entities/*` and `features/*` imports schemas from contracts |
 | dark mode | `next-themes` + per-mode CSS variables + `ThemeToggle` all work |
 :::

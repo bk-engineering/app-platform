@@ -1,141 +1,90 @@
 ---
 title: Folder structure · web
-status: in-progress
-statusNote: Only one route exists, and the button is hand-rolled, not real shadcn
+status: implemented
 ---
 
 # Folder structure · web
 
-<Status value="in-progress" note="Only one route exists" />
+<Status value="implemented" />
 
-The [repo tour](/en/start/repo-tour) gives a wide-angle view of `apps/web`. This page spells out the full target folder tree.
+The [repo tour](/en/start/repo-tour) gives the big picture of `apps/web`; this page details the `core/entities/features/shared` layout `apps/web/src` actually uses — designed so this repo can be forked to start new projects, by separating what stays fixed across every project from what gets edited or deleted per feature.
 
-## Target tree
+## Actual layout
 
 ```text
 apps/web/src/
-├── app/
-│   ├── layout.tsx              root layout (pass-through)
-│   ├── providers.tsx           QueryClientProvider (client component)
-│   ├── globals.css             Tailwind v4 entry + design tokens
-│   └── [locale]/                every page lives under the locale segment
-│       ├── layout.tsx           NextIntlClientProvider + shell (nav/sidebar)
-│       ├── page.tsx             home page
-│       ├── (auth)/               route group — no login required
-│       │   ├── login/page.tsx
-│       │   └── signup/page.tsx
-│       └── (app)/                route group — login required
-│           ├── dashboard/page.tsx
-│           ├── settings/
-│           │   ├── users/page.tsx
-│           │   ├── roles/page.tsx
-│           │   └── theme/page.tsx
-│           └── profile/page.tsx
-│
-├── i18n/
-│   ├── routing.ts               defineRouting: locales ["th","en"]
-│   ├── request.ts               loads messages per request
-│   └── navigation.ts            Link/redirect/useRouter that know the locale
-│
-├── components/
-│   ├── ui/                      shadcn/ui — never hand-edit generated files
-│   └── shared/                  our own components, composed from ui/
-│
-├── lib/
-│   ├── utils.ts                 cn() helper
-│   ├── api-client.ts             fetch wrapper that attaches a trace id
-│   └── ability.ts                buildAbility() from CASL rules
-│
-├── hooks/                       custom hooks shared across pages
-└── proxy.ts                     Next 16's new name for middleware.ts
+├── app/                     Next.js App Router — routing only, imports from the barrels below
+│   └── [locale]/            (auth)/login, (app)/{dashboard,profile,settings/*}
+├── core/                    infra that stays fixed across every forked project
+│   ├── auth/                login/logout/getMe, session storage, useSession
+│   ├── permissions/         CASL: buildAbility, AbilityProvider, useAbility
+│   ├── api-client/          fetch wrapper + trace id, env, error mapping
+│   ├── i18n/                routing, navigation, request config, messages/
+│   └── ui/                  design system (19 shadcn-style primitives)
+├── entities/                domain hooks bound to @app-platform/contracts schemas
+│   ├── user/                useMe, useUsers, useChangePassword
+│   └── role/                useRoles
+├── features/                project-specific features — replaced/deleted on fork
+│   ├── dashboard/, users/, roles/, settings/, shell/
+├── shared/                  generic utilities with no domain meaning
+│   └── lib/                 cn()
+└── proxy.ts                 next-intl middleware (Next 16's rename of middleware.ts)
 ```
 
-What actually exists today is only `app/layout.tsx`, `app/[locale]/{layout,page}.tsx`, `i18n/`, `proxy.ts`, and a single `components/ui/button.tsx` — everything else is the target.
+Every subfolder under `core/`, `entities/`, `features/`, `shared/` has one `index.ts` as its only legal entry point — files must not import directly into another module's internals; only through its barrel. This is enforced by ESLint (`eslint-plugin-boundaries`, see below).
 
-## Feature-based grouping
-
-Pages are grouped with Next.js [route groups](https://nextjs.org/docs/app/building-your-application/routing/route-groups) — the parentheses in `(auth)` and `(app)` never appear in the URL, but let each group have its own layout (e.g. `(app)/layout.tsx` checks for a session before rendering).
-
-```mermaid
-flowchart TD
-  L["[locale]/layout.tsx<br/>NextIntlClientProvider"]
-  L --> G1["(auth)/layout.tsx<br/>no session check"]
-  L --> G2["(app)/layout.tsx<br/>redirects if not logged in"]
-  G1 --> Login["login/page.tsx"]
-  G1 --> Signup["signup/page.tsx"]
-  G2 --> Dash["dashboard/page.tsx"]
-  G2 --> Settings["settings/*/page.tsx"]
-```
-
-## Anatomy of a page
-
-```text
-app/[locale]/(app)/settings/users/
-├── page.tsx           server component — fetches initial data
-├── loading.tsx         skeleton shown while loading
-├── error.tsx            error boundary scoped to this page
-└── _components/         components used only on this page, never exported elsewhere
-```
-
-Folders prefixed with `_` are not treated as routes by Next.js — use them for components tied to one page. Once a component is used by more than one page, promote it to `components/shared/`.
-
-## Shared folders
-
-| Folder | Purpose | Related |
-| --- | --- | --- |
-| `components/ui/` | `shadcn/ui` components generated by the CLI — the design system's base | [UI system](/en/frontend/ui-system) |
-| `components/shared/` | Our own components composed from `ui/`, reused across pages | — |
-| `lib/api-client.ts` | Fetch wrapper that attaches a trace id and parses the error envelope | [Trace ID](/en/platform/trace-id) |
-| `lib/ability.ts` | Builds the CASL ability from the rules the API sends | [CASL](/en/auth/casl) |
-| `hooks/` | Custom hooks such as `useDebounce`, `useAbility` | — |
-
-::: tip `proxy.ts`, not `middleware.ts`
-Next.js 16 renamed the middleware file to `proxy.ts`. Right now it only holds the next-intl middleware. Route protection (redirecting to `/login` when there's no session) gets added here — see [Client session](/en/frontend/auth-client).
-:::
-
-## File naming
-
-| Kind | Pattern | Example |
-| --- | --- | --- |
-| Route (Next.js requires it) | `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx` | `dashboard/page.tsx` |
-| Our own components | PascalCase | `UserTable.tsx` |
-| Hooks | `use<Name>.ts` | `useAbility.ts` |
-| lib / utils | camelCase logic, kebab-case filename | `apiClient` exported from `api-client.ts` |
-
-::: warning Never hand-edit `components/ui/` (except to resolve a merge conflict)
-These components are generated by the `shadcn` CLI. Edit them directly and a later `shadcn add` can silently overwrite or conflict with your changes. Adjust styling through `components/shared/` wrappers instead, or edit the tokens in `packages/config/tailwind/theme.css`.
-:::
-
-## Dependency direction
+## Cross-layer dependency rule
 
 ```mermaid
 flowchart LR
-  App["app/[locale]/**"]
-  Shared["components/shared"]
-  UI["components/ui"]
-  Lib["lib/"]
-  Hooks["hooks/"]
-  Contracts["@app-platform/contracts"]
-
-  App --> Shared
-  App --> Lib
-  App --> Hooks
-  Shared --> UI
-  Lib --> Contracts
-  Hooks --> Lib
-
-  classDef pkg fill:#eef2ff,stroke:#6366f1
-  class Contracts pkg
+  App["app/"] --> Features["features/*"]
+  App --> Entities["entities/*"]
+  App --> Core["core/*"]
+  App --> Shared["shared/*"]
+  Features --> Entities
+  Features --> Core
+  Features --> Shared
+  Entities --> Core
+  Entities --> Shared
+  Core --> Shared
 ```
 
-`components/ui/` imports nothing beyond external libraries (Radix, `class-variance-authority`) — it's the base everything else builds on, not a place that depends on domain logic.
+- `shared/` imports nothing here — it's a leaf
+- `core/` may only import `shared/`
+- `entities/` may import `core/`, `shared/`
+- `features/` may import `entities/`, `core/`, `shared/` — **may not import another feature** (e.g. `features/users` may not import `features/roles`). If two features genuinely need to share something, promote it to `entities/`
+- `app/` may import every layer
 
-::: warning Current code status
-| Target spec | Code today |
-| --- | --- |
-| `(auth)` / `(app)` route groups with real pages | Only a single `app/[locale]/page.tsx` exists |
-| `components/ui/` from the shadcn CLI | `button.tsx` is hand-rolled, no Radix, references an undefined `bg-brand-600` token — [Roadmap](/en/start/roadmap) debt #10 |
-| `lib/api-client.ts`, `lib/ability.ts` | Don't exist |
-| `hooks/` | Folder doesn't exist |
-| `i18n/`, `proxy.ts` | Exist and match the target tree |
+Breaking these rules is an ESLint error at build time, not just a review comment — intentionally strict, since this repo is meant to be forked and edited without the original team reviewing every PR.
+
+## Why this split
+
+| Layer | Criterion | Examples |
+| --- | --- | --- |
+| `core/` | Infra code that barely changes across projects | auth, CASL, fetch wrapper, i18n, design system |
+| `entities/` | Hooks bound to domain objects present in most admin projects | `useUsers`, `useRoles` |
+| `features/` | Business logic specific to this project — first thing deleted/rewritten on fork | dashboard, settings, dialogs |
+| `shared/` | Utilities with no domain awareness at all | `cn()` |
+
+One judgment call worth flagging: `features/shell/` (sidebar, user menu) looks "stable" but hardcodes the actual menu items per feature, so it's classified as `features/`, not `core/` — a forked project with a different menu edits here.
+
+## Query keys are split by owner
+
+`query-keys.ts` is no longer one central file — each key factory lives with the module that owns that data. `sessionKeys` lives in `core/auth/`, `userKeys` in `entities/user/`, `roleKeys` in `entities/role/`, `dashboardKeys` in `features/dashboard/`. Reason: if a fork deletes `features/dashboard/`, there's no dangling export left behind in a shared file nobody references anymore.
+
+## File naming
+
+| Type | Pattern | Example |
+| --- | --- | --- |
+| Route (Next.js-mandated) | `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx` | `dashboard/page.tsx` |
+| Component | PascalCase export, kebab-case filename | `edit-user-dialog.tsx` → `EditUserDialog` |
+| Hook | `use<Name>.ts` | `use-roles.ts` → `useRoles` |
+| Barrel | `index.ts` in every folder under `core/`, `entities/`, `features/`, `shared/` | `entities/user/index.ts` |
+
+::: tip `proxy.ts`, not `middleware.ts`
+Next.js 16 renamed the middleware file to `proxy.ts` — right now it only holds the next-intl middleware. See [Client-side session](/en/frontend/auth-client).
+:::
+
+::: warning Don't hand-edit files in `core/ui/` (except to resolve a merge conflict)
+These components are the design-system base every forked project shares. Adjust styling through the tokens in `packages/config/tailwind/theme.css` instead.
 :::

@@ -3,10 +3,10 @@
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
 import { Sun, Moon, Monitor } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { useUpdateMe } from "@/hooks/use-me";
+import { Button } from "@/core/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui";
+import { cn } from "@/shared/lib";
+import { useUpdateMe } from "@/entities/user";
 
 const MODES = [
   { value: "light", icon: Sun },

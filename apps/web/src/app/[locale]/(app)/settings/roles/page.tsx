@@ -6,17 +6,17 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import type { Role } from "@app-platform/contracts";
-import { useAbility } from "@/lib/ability-context";
-import { useSession } from "@/hooks/use-session";
-import { useRoles, useDeleteRole } from "@/hooks/use-roles";
-import { ForbiddenState } from "@/components/forbidden-state";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RoleDialog } from "@/components/forms/role-dialog";
-import { ApiError } from "@/lib/api-client";
-import { getMe } from "@/lib/auth";
-import { sessionKeys } from "@/hooks/query-keys";
+import { useAbility } from "@/core/permissions";
+import { useSession } from "@/core/auth";
+import { useRoles, useDeleteRole } from "@/entities/role";
+import { ForbiddenState } from "@/features/shell";
+import { Button } from "@/core/ui";
+import { Skeleton } from "@/core/ui";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui";
+import { RoleDialog } from "@/features/roles";
+import { ApiError } from "@/core/api-client";
+import { getMe } from "@/core/auth";
+import { sessionKeys } from "@/core/auth";
 
 export default function RolesSettingsPage() {
   const t = useTranslations("RolesPage");

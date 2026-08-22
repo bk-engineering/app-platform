@@ -4,10 +4,10 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
-import { ApiError } from "@/lib/api-client";
-import { AbilityProvider } from "@/lib/ability-context";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { ApiError } from "@/core/api-client";
+import { AbilityProvider } from "@/core/permissions";
+import { Toaster } from "@/core/ui";
+import { TooltipProvider } from "@/core/ui";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(

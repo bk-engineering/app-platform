@@ -1,12 +1,12 @@
 ---
 title: CASL authorization
-status: in-progress
-statusNote: AbilityFactory + PoliciesGuard are real now on the users module — no cache, no Prisma client extension, no tests yet
+status: implemented
+statusNote: AbilityFactory + PoliciesGuard are real on the users module, cached in Redis (5-minute TTL), and tested — no Prisma client extension yet
 ---
 
 # CASL authorization
 
-<Status value="in-progress" note="working on the users module now — no cache/Prisma extension/tests yet" />
+<Status value="implemented" note="working on the users module · Redis cache (5-minute TTL) + tested — no Prisma client extension yet" />
 
 > **One ability set: enforced on the server, reused in the UI.**
 
@@ -133,10 +133,22 @@ function interpolate(conditions: unknown, ctx: { user: { id: string } }): Record
 
 ### Caching
 
-`forUser()` hits the database on every request, which won't hold under load. Cache it in Redis under `ability:<userId>` with a 5-minute TTL — and **invalidate immediately** when a user's roles change or a role's permissions change.
+`forUser()` caches the rules (not an `AppAbility` instance — functions aren't JSON) in Redis under `ability:<userId>` with a 5-minute TTL, through `RedisService.getJSON`/`setJSON`. When `REDIS_URL` isn't set or Redis is down, `getJSON` always returns `null`, so the system falls back to hitting the DB on every request instead of erroring.
+
+```ts
+async forUser(userId: string): Promise<AppAbility> {
+  const cached = await this.redis.getJSON<RawRule[]>(`ability:${userId}`);
+  if (cached) return createMongoAbility<AppAbility>(AbilityRulesSchema.parse(cached));
+
+  const rows = await this.prisma.permission.findMany({ /* … */ });
+  const rules = /* … */;
+  await this.redis.setJSON(`ability:${userId}`, rules, 300);
+  return createMongoAbility<AppAbility>(rules);
+}
+```
 
 ::: warning A permission cache is one you cannot get wrong
-A stale permission cache means someone who just lost access keeps it for five more minutes. If you cache, the invalidation must happen inside the same transaction as the role change. If you're not confident, don't cache yet — a database round trip per request is cheaper than granting the wrong permission.
+A stale permission cache means someone who just lost access keeps it for up to 5 more minutes (the TTL). Today there is **no immediate invalidation** when a role or permission changes, because no endpoint edits a user's roles/permissions yet (no `PATCH /users/:id/roles`) — once that endpoint exists, **the `ability:<userId>` key must be invalidated in the same transaction as the role change**, before the 5-minute TTL becomes a real gap.
 :::
 
 ## Enforcing on the server
@@ -255,7 +267,7 @@ Returning `{ canCreateUser: true, canDeleteUser: false }` means every new button
 The client reconstructs it:
 
 ```ts
-// apps/web/src/lib/ability.ts
+// apps/web/src/core/permissions/ability.ts
 import { createMongoAbility } from "@casl/ability";
 import { AbilityRulesSchema } from "@app-platform/contracts";
 
@@ -327,7 +339,7 @@ Every row of the [permission matrix](/en/auth/rbac-model) deserves a matching te
 | `accessibleBy` on every query | Not needed yet — the only single-row read, `GET /users/:id`, uses an instance check (`ability.can('read', subject(...))`) instead, since there's no list endpoint; see [API conventions](/en/conventions/api-conventions) |
 | `GET /v1/auth/me` returning rules | ✅ (the real route is `GET /auth/me`, no `/v1` prefix — see [API conventions](/en/conventions/api-conventions)) |
 | A `Permission` table | ✅ seeded with the full [RBAC](/en/auth/rbac-model) matrix |
-| Field-level restrictions | No endpoint edits a user yet (no `PATCH /users/:id`), so field-level checks can't be exercised in real code even though each permission row already stores `fields` |
-| Caching the ability | Not done — hits the DB every request, per the doc's own recommendation |
-| Ability tests | There are no test files in the project at all |
+| Field-level restrictions | `PATCH /users/:id` exists and does an instance-level check (`ability.can("update", subject(...))`), but **doesn't yet check per field** as shown in the code sample above — `UsersService.update()` has no loop over `Object.keys(dto)`, even though each permission row already stores `fields` |
+| Caching the ability | ✅ Redis, key `ability:<userId>`, 5-minute TTL, falls back to "no cache" when Redis is unavailable — no immediate invalidation yet when a role changes, since no endpoint edits roles yet |
+| Ability tests | ✅ `apps/api/src/auth/ability/ability.factory.spec.ts` — covers cache hit/miss, `${user.id}` interpolation, field-level checks, and a subject with no permission row |
 :::

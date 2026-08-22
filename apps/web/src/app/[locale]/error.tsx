@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { v7 as uuidv7 } from "uuid";
-import { Button } from "@/components/ui/button";
-import { env } from "@/lib/env";
+import { Button } from "@/core/ui";
+import { env } from "@/core/api-client";
 
 const API_BASE_URL = env.NEXT_PUBLIC_API_URL;
 

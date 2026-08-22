@@ -7,13 +7,13 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Command } from "lucide-react";
-import { useRouter } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldError } from "@/components/ui/field";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiError } from "@/lib/api-client";
-import { login } from "@/lib/auth";
+import { useRouter } from "@/core/i18n";
+import { Button } from "@/core/ui";
+import { Input } from "@/core/ui";
+import { Field, FieldError } from "@/core/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui";
+import { ApiError } from "@/core/api-client";
+import { login } from "@/core/auth";
 
 const LoginFormSchema = z.object({
   email: z.email(),

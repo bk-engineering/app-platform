@@ -44,7 +44,7 @@ prefetch ฝั่ง server ทำให้ HTML ชุดแรกถูกต
 `@casl/react` v7 มี `AbilityProvider`/`useAbility`/`Can` ให้ใช้ตรง ๆ (เวอร์ชันก่อนหน้าต้องประกอบเองด้วย `createContextualCan` ตามที่เอกสารรุ่นก่อนแนะนำ) โค้ดจริงจึงห่อ provider ของ library อีกชั้นแทนที่จะสร้าง context เอง
 
 ```tsx
-// apps/web/src/lib/ability-context.tsx
+// apps/web/src/core/permissions/ability-context.tsx
 "use client";
 import { AbilityProvider as CaslAbilityProvider, Can, useAbility as useCaslAbility } from "@casl/react";
 import { buildAbility, type AppAbility } from "./ability";
@@ -79,7 +79,7 @@ sequence diagram ด้านบนสมมุติว่า `(app)/layout.tsx
 ## ซ่อนของ
 
 ```tsx
-import { Can } from "@/lib/ability-context";
+import { Can } from "@/core/permissions";
 
 <Can I="create" a="User">
   <Button onClick={openCreateDialog}>{t("addUser")}</Button>
@@ -235,10 +235,10 @@ it("แสดงปุ่มลบสำหรับ manager", () => {
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
 | `@casl/ability` + `@casl/react` | ✅ ทั้งคู่ติดตั้งแล้ว |
-| `AbilityProvider` + `<Can>` | ✅ `apps/web/src/lib/ability-context.tsx` ห่อ `@casl/react` v7 (ไม่ได้ประกอบ context เอง) ต่อเข้ากับ `providers.tsx` |
+| `AbilityProvider` + `<Can>` | ✅ `apps/web/src/core/permissions/ability-context.tsx` ห่อ `@casl/react` v7 (ไม่ได้ประกอบ context เอง) ต่อเข้ากับ `providers.tsx` |
 | `GET /auth/me` ส่ง rules | ✅ ดู [CASL](/auth/casl) (route จริงไม่มี `/v1` prefix) |
 | เมนูกรองตามสิทธิ์ | ✅ `apps/web/src/components/app-nav.tsx` กรองรายการ users/roles ด้วย ability จริง |
-| `<ForbiddenState />` | ✅ `apps/web/src/components/forbidden-state.tsx` ใช้กรองหน้า `settings/users`, `settings/roles` ด้วย ability check |
+| `<ForbiddenState />` | ✅ `apps/web/src/features/shell/forbidden-state.tsx` ใช้กรองหน้า `settings/users`, `settings/roles` ด้วย ability check |
 | server prefetch + hydrate | ไม่มี — `AbilityProvider` ยิง `useQuery` ฝั่ง client เท่านั้น |
 | เทส | ไม่มีเครื่องมือเทสใน `apps/web` เลย — เทส `<Can>`/ability ที่มีอยู่ตอนนี้เป็นฝั่ง API (`ability.factory.spec.ts`) เท่านั้น |
 :::

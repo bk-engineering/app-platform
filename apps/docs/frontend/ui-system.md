@@ -14,7 +14,7 @@ shadcn/ui ไม่ใช่ npm package ที่ import เข้ามาใ�
 
 | | npm component library (เช่น MUI, Antd) | shadcn/ui |
 | --- | --- | --- |
-| โค้ดอยู่ที่ไหน | `node_modules`, แก้ไม่ได้ตรง ๆ | อยู่ใน `components/ui/` ของ repo เราเอง |
+| โค้ดอยู่ที่ไหน | `node_modules`, แก้ไม่ได้ตรง ๆ | อยู่ใน `core/ui/` ของ repo เราเอง |
 | Bundle size | โหลดทั้ง library แม้ใช้ไม่กี่ตัว | มีเฉพาะ component ที่ `npx shadcn add` มาจริง |
 | ปรับ style | ต้อง override ผ่าน theme API ของ library | แก้ Tailwind class ตรง ๆ ในไฟล์ |
 | อัปเดตเวอร์ชัน | `npm update` แล้วอาจพัง breaking change | ไม่มี "เวอร์ชัน" — โค้ดหยุดนิ่งจนกว่าจะแก้เอง |
@@ -40,8 +40,8 @@ npx shadcn@latest init
   },
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui"
+    "utils": "@/shared/lib",
+    "ui": "@/core/ui"
   }
 }
 ```
@@ -54,7 +54,7 @@ npx shadcn@latest init
 npx shadcn@latest add button dialog form
 ```
 
-คำสั่งนี้เขียนไฟล์ลงตรง ๆ ที่ `components/ui/button.tsx` เป็นต้น — ไม่ใช่ dependency ใน `package.json` ตรวจสอบด้วยตาว่าไฟล์เข้ามาถูกที่แล้ว `git add` ตามปกติ
+คำสั่งนี้เขียนไฟล์ลงตรง ๆ ที่ `core/ui/button.tsx` เป็นต้น — ไม่ใช่ dependency ใน `package.json` ตรวจสอบด้วยตาว่าไฟล์เข้ามาถูกที่แล้ว `git add` ตามปกติ
 
 ## โครงสร้างโฟลเดอร์
 
@@ -68,18 +68,18 @@ apps/web/src/components/
     └── login-form.tsx
 ```
 
-::: tip อย่าใส่ data fetching เข้าไปใน `components/ui/`
-`components/ui/*` ควรเป็น presentational ล้วน — รับ prop, render, เรียก callback สิ่งที่รู้เรื่อง query, mutation หรือ route ควรอยู่ใน `components/forms/` หรือใกล้ page ที่ใช้จริง แยกกันไว้ทำให้ upgrade component จาก CLI ในอนาคตไม่ชนกับ logic ของเรา
+::: tip อย่าใส่ data fetching เข้าไปใน `core/ui/`
+`core/ui/*` ควรเป็น presentational ล้วน — รับ prop, render, เรียก callback สิ่งที่รู้เรื่อง query, mutation หรือ route ควรอยู่ใน `features/*/` หรือใกล้ page ที่ใช้จริง แยกกันไว้ทำให้ upgrade component จาก CLI ในอนาคตไม่ชนกับ logic ของเรา
 :::
 
 ## Component ตัวอย่างที่ผ่าน CLI จริง
 
 ```tsx
-// apps/web/src/components/ui/button.tsx
+// apps/web/src/core/ui/button.tsx
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",

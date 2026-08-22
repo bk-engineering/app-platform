@@ -141,7 +141,7 @@ stateDiagram-v2
 ```
 
 ```ts
-// apps/web/src/lib/api-client.ts
+// apps/web/src/core/api-client/api-client.ts
 let refreshPromise: Promise<boolean> | null = null;
 
 /** everyone who hits 401 at once shares a single refresh */
@@ -203,7 +203,7 @@ Without single-flight, rotation logs users out every time a token expires while 
 ```ts
 // apps/web/src/proxy.ts
 import createIntlMiddleware from "next-intl/middleware";
-import { routing } from "./i18n/routing";
+import { routing } from "@/core/i18n";
 
 const intl = createIntlMiddleware(routing);
 
@@ -243,7 +243,7 @@ The middleware is UX (don't show an empty page), not security. Security lives in
 ## The current session
 
 ```ts
-// apps/web/src/hooks/use-session.ts
+// apps/web/src/core/auth/use-session.ts
 export const sessionKeys = { me: ["auth", "me"] as const };
 
 export function useSession() {

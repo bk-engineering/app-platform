@@ -121,7 +121,7 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml restart api
 ```bash
 pnpm lint          # eslint ทุก workspace
 pnpm format        # prettier ทั้ง repo
-pnpm test          # vitest (ยังไม่มีไฟล์เทส — ดู roadmap)
+pnpm test          # vitest (มีเทส 3 ไฟล์ ยังไม่ครอบคลุม controller/e2e — ดู roadmap)
 pnpm build         # build ทุกแอป
 ```
 
