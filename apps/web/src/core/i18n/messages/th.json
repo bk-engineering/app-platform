@@ -43,6 +43,10 @@
     "nothingToShow": "ไม่มีข้อมูลให้แสดง",
     "nothingToShowDescription": "บัญชีของคุณยังไม่มีสิทธิ์ดู widget ใดในหน้านี้"
   },
+  "SettingsPage": {
+    "title": "การตั้งค่า",
+    "description": "จัดการผู้ใช้ บทบาท และรูปลักษณ์"
+  },
   "UsersPage": {
     "title": "จัดการผู้ใช้",
     "addUser": "เพิ่มผู้ใช้",

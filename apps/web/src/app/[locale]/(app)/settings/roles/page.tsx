@@ -12,6 +12,7 @@ import { useRoles, useDeleteRole } from "@/entities/role";
 import { ForbiddenState } from "@/features/shell";
 import { Button } from "@/core/ui";
 import { Skeleton } from "@/core/ui";
+import { PageHeader } from "@/core/ui";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui";
 import { RoleDialog } from "@/features/roles";
 import { ApiError } from "@/core/api-client";
@@ -53,11 +54,11 @@ export default function RolesSettingsPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        {canCreate && <Button onClick={() => setEditing("new")}>{t("addRole")}</Button>}
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title={t("title")}
+        actions={canCreate && <Button onClick={() => setEditing("new")}>{t("addRole")}</Button>}
+      />
 
       {roles.isLoading && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

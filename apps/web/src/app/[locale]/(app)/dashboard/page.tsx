@@ -6,7 +6,7 @@ import { Users as UsersIcon } from "lucide-react";
 import { useAbility, canUnconditionally } from "@/core/permissions";
 import { useSession, getMe, sessionKeys } from "@/core/auth";
 import { SummaryWidget, ActivityWidget } from "@/features/dashboard";
-import { EmptyState } from "@/core/ui";
+import { EmptyState, PageHeader } from "@/core/ui";
 
 export default function DashboardPage() {
   const t = useTranslations("DashboardPage");
@@ -20,9 +20,7 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">
-        {t("greeting", { name: me.data?.user.displayName ?? "" })}
-      </h1>
+      <PageHeader title={t("greeting", { name: me.data?.user.displayName ?? "" })} />
 
       {!hasAnyWidget && (
         <EmptyState icon={<UsersIcon />} title={t("nothingToShow")} description={t("nothingToShowDescription")} />

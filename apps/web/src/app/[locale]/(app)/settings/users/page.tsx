@@ -15,9 +15,9 @@ import { ForbiddenState } from "@/features/shell";
 import { Input } from "@/core/ui";
 import { Button } from "@/core/ui";
 import { Badge } from "@/core/ui";
-import { Skeleton } from "@/core/ui";
 import { EmptyState } from "@/core/ui";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/core/ui";
+import { PageHeader } from "@/core/ui";
+import { DataTable, DataTableColumnHeader, DataTablePagination, type ColumnDef } from "@/core/ui";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/core/ui";
 import { CreateUserDialog } from "@/features/users";
@@ -31,7 +31,7 @@ export default function UsersSettingsPage() {
   const ability = useAbility();
   const session = useSession();
   const [search, setSearch] = useState("");
-  const [page] = useState(1);
+  const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<User | null>(null);
   const [deleting, setDeleting] = useState<User | null>(null);
 
@@ -60,30 +60,87 @@ export default function UsersSettingsPage() {
     }
   };
 
+  const columns: ColumnDef<User, unknown>[] = [
+    {
+      accessorKey: "displayName",
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t("displayName")} />,
+      cell: ({ row }) => <span className="font-medium">{row.original.displayName}</span>,
+    },
+    {
+      accessorKey: "email",
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t("email")} />,
+    },
+    {
+      id: "role",
+      header: t("role"),
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          {row.original.roles.map((role) => (
+            <Badge key={role.id}>{role.name}</Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: ({ column }) => <DataTableColumnHeader column={column} title={t("status")} />,
+      cell: ({ row }) => (
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            className={`size-2 rounded-full ${row.original.status === "ACTIVE" ? "bg-success" : "bg-muted-foreground"}`}
+          />
+          {row.original.status === "ACTIVE" ? t("active") : t("inactive")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const user = row.original;
+        const target = subject("User", user);
+        const canUpdate = ability.can("update", target);
+        const canDelete = ability.can("delete", target);
+        if (!canUpdate && !canDelete) return null;
+        return (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={t("actions")}>
+                  <MoreVertical className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {canUpdate && <DropdownMenuItem onSelect={() => setEditing(user)}>{t("edit")}</DropdownMenuItem>}
+                {canDelete && (
+                  <DropdownMenuItem onSelect={() => setDeleting(user)} className="text-destructive">
+                    {t("delete")}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <CreateUserDialog />
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title={t("title")} actions={<CreateUserDialog />} />
 
       <div className="relative max-w-sm">
         <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder={t("searchPlaceholder")}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="pl-8"
         />
       </div>
-
-      {users.isLoading && (
-        <div className="flex flex-col gap-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
-      )}
 
       {users.isError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
@@ -94,80 +151,33 @@ export default function UsersSettingsPage() {
         </div>
       )}
 
-      {users.data && users.data.items.length === 0 && (
-        <EmptyState
-          title={search ? t("noSearchResults", { search }) : t("noUsers")}
-          action={
-            search ? (
-              <Button variant="outline" size="sm" onClick={() => setSearch("")}>
-                {t("clearFilters")}
-              </Button>
-            ) : undefined
+      {!users.isError && (
+        <DataTable
+          columns={columns}
+          data={users.data?.items ?? []}
+          isLoading={users.isLoading}
+          emptyState={
+            <EmptyState
+              title={search ? t("noSearchResults", { search }) : t("noUsers")}
+              action={
+                search ? (
+                  <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+                    {t("clearFilters")}
+                  </Button>
+                ) : undefined
+              }
+            />
           }
         />
       )}
 
-      {users.data && users.data.items.length > 0 && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("displayName")}</TableHead>
-              <TableHead>{t("email")}</TableHead>
-              <TableHead>{t("role")}</TableHead>
-              <TableHead>{t("status")}</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.data.items.map((user) => {
-              const target = subject("User", user);
-              const canUpdate = ability.can("update", target);
-              const canDelete = ability.can("delete", target);
-              return (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.displayName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {user.roles.map((role) => (
-                        <Badge key={role.id}>{role.name}</Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={`size-2 rounded-full ${user.status === "ACTIVE" ? "bg-success" : "bg-muted-foreground"}`}
-                      />
-                      {user.status === "ACTIVE" ? t("active") : t("inactive")}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {(canUpdate || canDelete) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label={t("actions")}>
-                            <MoreVertical className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canUpdate && (
-                            <DropdownMenuItem onSelect={() => setEditing(user)}>{t("edit")}</DropdownMenuItem>
-                          )}
-                          {canDelete && (
-                            <DropdownMenuItem onSelect={() => setDeleting(user)} className="text-destructive">
-                              {t("delete")}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      {users.data && users.data.total > users.data.limit && (
+        <DataTablePagination
+          page={page}
+          onPageChange={setPage}
+          hasNextPage={page * users.data.limit < users.data.total}
+          label={(p) => `${p} / ${Math.ceil(users.data!.total / users.data!.limit)}`}
+        />
       )}
 
       <EditUserDialog user={editing} onClose={() => setEditing(null)} />

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/core/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui";
+import { PageHeader } from "@/core/ui";
 import { cn } from "@/shared/lib";
 import { useUpdateMe } from "@/entities/user";
 
@@ -33,8 +34,8 @@ export default function ThemeSettingsPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+    <div className="flex max-w-lg flex-col gap-6">
+      <PageHeader title={t("title")} />
 
       <Card>
         <CardHeader>

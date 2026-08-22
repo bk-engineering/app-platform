@@ -43,6 +43,10 @@
     "nothingToShow": "Nothing to show",
     "nothingToShowDescription": "Your account doesn't have access to any widgets on this page."
   },
+  "SettingsPage": {
+    "title": "Settings",
+    "description": "Manage users, roles, and appearance."
+  },
   "UsersPage": {
     "title": "Manage users",
     "addUser": "Add user",
