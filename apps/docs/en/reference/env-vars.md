@@ -138,7 +138,7 @@ Setting one requires setting all three — [EnvSchema](/en/platform/config) enfo
 | --- | --- |
 | Everything passes through `EnvSchema` | No validation — just `ConfigModule.forRoot({ isGlobal: true })` |
 | Read only via `ConfigService` | `main.ts` reads `process.env.API_PORT`; `app.module.ts` reads `LOG_LEVEL`/`NODE_ENV` |
-| `CORS_ORIGINS` allowlist | Bare `enableCors()` allows every origin |
+| `CORS_ORIGINS` allowlist | ✅ Done — `enableCors({ origin: env.CORS_ORIGINS, ... })` |
 | `REDIS_URL` has a consumer | Set, but no code references it |
 | `NEXT_PUBLIC_API_URL` has a consumer | Set, but no file in `apps/web` references it |
 | `.env.example` differs from `.env` | The two files are byte-identical |

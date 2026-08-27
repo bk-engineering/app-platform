@@ -138,7 +138,7 @@ refresh token เปลี่ยนจาก JWT เป็น random string ท�
 | --- | --- |
 | ทุก env ผ่าน `EnvSchema` | ไม่มีการ validate — `ConfigModule.forRoot({ isGlobal: true })` เฉย ๆ |
 | อ่านผ่าน `ConfigService` เท่านั้น | `main.ts` อ่าน `process.env.API_PORT` และ `app.module.ts` อ่าน `LOG_LEVEL`/`NODE_ENV` ตรง ๆ |
-| `CORS_ORIGINS` เป็น allowlist | `enableCors()` เปล่า = ทุก origin |
+| `CORS_ORIGINS` เป็น allowlist | ✅ ทำแล้ว — `enableCors({ origin: env.CORS_ORIGINS, ... })` |
 | `REDIS_URL` มีคนใช้ | ตั้งไว้แต่ไม่มีโค้ดอ้างถึง |
 | `NEXT_PUBLIC_API_URL` มีคนใช้ | ตั้งไว้แต่ไม่มีไฟล์ไหนใน `apps/web` อ้างถึง |
 | `.env.example` ต่างจาก `.env` | ทั้งสองไฟล์เหมือนกันทุกไบต์ |

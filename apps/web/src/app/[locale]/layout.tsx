@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { notFound } from "next/navigation";
-import { routing } from "@/i18n/routing";
+import { routing } from "@/core/i18n";
 import { Providers } from "../providers";
 import "../globals.css";
 

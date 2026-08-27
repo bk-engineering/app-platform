@@ -30,7 +30,7 @@ useEffect(() => {
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { ApiError } from "@/lib/api-client";
+import { ApiError } from "@/core/api-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -67,7 +67,7 @@ retry ค่า default ของ TanStack Query (3 ครั้ง, exponential
 ## Query key convention <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/query-keys.ts
+// apps/web/src/core/auth/query-keys.ts (sessionKeys) + entities/*/query-keys.ts + features/*/query-keys.ts
 export const userKeys = {
   all: ["users"] as const,
   list: (filters: { page: number; search?: string }) => [...userKeys.all, "list", filters] as const,
@@ -86,11 +86,11 @@ export const userKeys = {
 ## เขียน query hook <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts
+// apps/web/src/entities/user/use-users.ts
 import { useQuery } from "@tanstack/react-query";
 import { paginatedSchema, UserSchema } from "@app-platform/contracts";
-import { request } from "@/lib/api-client";
-import { userKeys } from "@/hooks/query-keys";
+import { request } from "@/core/api-client";
+import { userKeys } from "@/core/auth";
 
 export function useUsers(page: number, search: string) {
   return useQuery({
@@ -102,7 +102,7 @@ export function useUsers(page: number, search: string) {
 }
 ```
 
-`request` มาจาก `lib/api-client.ts` (ดู [Session ฝั่ง client](/frontend/auth-client#refresh-อัตโนมัติ)) — มัน parse response ผ่าน schema เดียวกับที่ API ใช้สร้าง Swagger ดังนั้น type ของ `data` ไม่มีทาง drift จากสิ่งที่ server ส่งจริง โปรเจกต์จริงมี hook แบบนี้ครบทุกทรัพยากร: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`
+`request` มาจาก `core/api-client/api-client.ts` (ดู [Session ฝั่ง client](/frontend/auth-client#refresh-อัตโนมัติ)) — มัน parse response ผ่าน schema เดียวกับที่ API ใช้สร้าง Swagger ดังนั้น type ของ `data` ไม่มีทาง drift จากสิ่งที่ server ส่งจริง โปรเจกต์จริงมี hook แบบนี้ครบทุกทรัพยากร: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`
 
 ## Server prefetch + Hydration
 
@@ -148,7 +148,7 @@ export default async function UsersPage() {
 ## Mutation + invalidate <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts
+// apps/web/src/entities/user/use-users.ts
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
 
@@ -185,8 +185,8 @@ if (error) {
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
 | `QueryClient` ตั้ง `staleTime`/`retry` กลาง | `retry` ตั้งกลางแล้ว (ข้าม `ApiError` หลัง refresh) — ยังไม่มี `staleTime` กลาง แต่ละ hook ตั้งเอง |
-| query/mutation hook ในโฟลเดอร์ `hooks/` | มีครบทุกทรัพยากร: users, roles, dashboard, audit log, me, change-password |
-| `request` client พร้อม single-flight refresh | มีจริงที่ `lib/api-client.ts` — ดู [Session ฝั่ง client](/frontend/auth-client) |
+| query/mutation hook ใน`entities/*` และ `features/*` | มีครบทุกทรัพยากร: users, roles, dashboard, audit log, me, change-password |
+| `request` client พร้อม single-flight refresh | มีจริงที่ `core/api-client/api-client.ts` — ดู [Session ฝั่ง client](/frontend/auth-client) |
 | Server prefetch + `HydrationBoundary` | ยังไม่มี — ทุก route ยังดึงข้อมูลจาก client หลัง mount |
 | query key convention (`query-keys.ts`) | มีจริง — `sessionKeys`, `userKeys`, `roleKeys`, `dashboardKeys` |
 :::

@@ -6,15 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
-import { getMe } from "@/lib/auth";
-import { sessionKeys } from "@/hooks/query-keys";
-import { useSession } from "@/hooks/use-session";
-import { useUpdateMe } from "@/hooks/use-me";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ChangePasswordDialog } from "@/components/forms/change-password-dialog";
+import { getMe } from "@/core/auth";
+import { sessionKeys } from "@/core/auth";
+import { useSession } from "@/core/auth";
+import { useUpdateMe } from "@/entities/user";
+import { Field } from "@/core/ui";
+import { Input } from "@/core/ui";
+import { Button } from "@/core/ui";
+import { Skeleton } from "@/core/ui";
+import { ChangePasswordDialog } from "@/features/settings";
 
 interface ProfileForm {
   displayName: string;

@@ -121,7 +121,7 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml restart api
 ```bash
 pnpm lint          # eslint across every workspace
 pnpm format        # prettier across the repo
-pnpm test          # vitest (no test files yet — see the roadmap)
+pnpm test          # vitest (3 test files exist, no controller/e2e coverage yet — see the roadmap)
 pnpm build         # build every app
 ```
 

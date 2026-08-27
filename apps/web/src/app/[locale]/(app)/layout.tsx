@@ -2,14 +2,14 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter, usePathname } from "@/i18n/navigation";
-import { useSession } from "@/hooks/use-session";
-import { getSession } from "@/lib/session";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
+import { useRouter, usePathname } from "@/core/i18n";
+import { useSession } from "@/core/auth";
+import { getSession } from "@/core/auth";
+import { AppSidebar } from "@/features/shell";
+import { ThemeToggle } from "@/features/settings";
+import { Separator } from "@/core/ui";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/core/ui";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@/core/ui";
 
 const PAGE_TITLE_KEYS: Record<string, string> = {
   "/dashboard": "dashboard",

@@ -53,7 +53,7 @@ flowchart TB
     Proxy["proxy.ts<br/>i18n + route guard"]
     RSC["Server Components"]
     Client["Client Components<br/>TanStack Query"]
-    ApiClient["lib/api-client<br/>fetch + zod parse"]
+    ApiClient["core/api-client<br/>fetch + zod parse"]
   end
 
   subgraph ApiApp["apps/api · NestJS 11"]

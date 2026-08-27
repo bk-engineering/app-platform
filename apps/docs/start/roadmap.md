@@ -97,7 +97,7 @@ status: implemented
 
 | หน้า | สถานะ | หมายเหตุ |
 | --- | --- | --- |
-| [กลยุทธ์การเทส](/quality/testing) | <Status value="planned" inline /> | `vitest` ติดตั้งแล้วแต่ไม่มีไฟล์เทสเลย |
+| [กลยุทธ์การเทส](/quality/testing) | <Status value="planned" inline /> | `vitest` ติดตั้งแล้ว มีเทส 3 ไฟล์ แต่ยังไม่มี controller/e2e test |
 | [Lint, format & type-check](/quality/code-quality) | <Status value="in-progress" inline /> | eslint/prettier/husky ทำงานจริง แต่ไม่มี script `typecheck` |
 
 ### ปฏิบัติการ & อ้างอิง
@@ -117,19 +117,18 @@ status: implemented
 
 | # | เรื่อง | อยู่ที่ | ทำไมต้องแก้ |
 | --- | --- | --- | --- |
-| 1 | `enableCors()` เปล่า = อนุญาตทุก origin | `apps/api/src/main.ts` | ต้องเป็น allowlist ก่อนขึ้น production |
-| 2 | ไม่ validate env ตอนบูต | `apps/api/src/app.module.ts` | ตั้ง env ผิดจะไประเบิดตอน runtime แทนที่จะตายตั้งแต่บูต ดู [Config](/platform/config) |
-| 3 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
-| 4 | ไม่มี test สักไฟล์ | ทั้ง repo | `vitest` เป็น devDependency และ `turbo test` มีอยู่ แต่ไม่มีไฟล์เทส (ยกเว้น `users.service.spec.ts` ที่มีอยู่แล้วก่อนหน้า) |
-| 5 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
-| 6 | `JwtAuthGuard` ไม่แยก expired จาก invalid | `apps/api/src/auth/jwt-auth.guard.ts` | ยังเป็น `AuthGuard("jwt")` เปล่า — client รีเฟรชเงียบ ๆ ไม่ได้ ต้องเตะผู้ใช้ออกทุก 15 นาที ดู [JWT & rotation](/auth/tokens) |
-| 7 | access/refresh token ไม่ตรวจ `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | token จากระบบอื่นที่แชร์ secret กันจะถูกยอมรับ |
-| 8 | ไม่มี script `typecheck` ที่ไหนเลย | ทุก `package.json` ในโปรเจกต์ | type error หลุดไปได้โดยไม่มีอะไรจับ ดู [Lint, format & type-check](/quality/code-quality) |
-| 9 | ไม่มี production Dockerfile/compose | `infra/docker/**`, root | มีแค่ dev stack ใช้งานจริงไม่ได้จนกว่าจะมี image สำหรับ production ดู [Docker & Traefik](/ops/docker-traefik) |
-| 10 | token ฝั่ง client เก็บใน sessionStorage ไม่ใช่ httpOnly cookie | `apps/web/src/lib/session.ts` | ขัดกับ [ADR-0006](/adr/0006-token-storage-httponly-cookie) — ยังไม่ได้ทำ เพราะเป็นงานเปลี่ยนสถาปัตยกรรม auth แยกต่างหาก ดู [Session ฝั่ง client](/frontend/auth-client) |
-| 11 | ไม่มี avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | ต้องมี object storage และ Google OAuth credentials ที่ยังไม่ได้ตั้งค่า ดู [โปรไฟล์](/features/profile) |
+| 1 | ไม่ validate env ตอนบูต | `apps/api/src/app.module.ts` | ตั้ง env ผิดจะไประเบิดตอน runtime แทนที่จะตายตั้งแต่บูต ดู [Config](/platform/config) |
+| 2 | Redis ยกขึ้นมาแต่ไม่มีใครใช้ | `docker-compose.yml` | ต้องตัดสินใจว่าจะใช้ทำอะไร (throttler store / refresh denylist) หรือถอดออก |
+| 3 | เทสมีแค่ 3 ไฟล์ ยังไม่ครอบคลุม controller/e2e | ทั้ง repo | มี `refresh-token.service.spec.ts`, `users.service.spec.ts`, `ability.factory.spec.ts` แล้ว แต่ไม่มี controller หรือ e2e test เลย |
+| 4 | ไม่มี CI | ไม่มี `.github/` | ไม่มีอะไรกันการ merge โค้ดที่ build ไม่ผ่าน ดู [CI/CD](/ops/ci-cd) |
+| 5 | `JwtAuthGuard` ไม่แยก expired จาก invalid | `apps/api/src/auth/jwt-auth.guard.ts` | ยังเป็น `AuthGuard("jwt")` เปล่า — client รีเฟรชเงียบ ๆ ไม่ได้ ต้องเตะผู้ใช้ออกทุก 15 นาที ดู [JWT & rotation](/auth/tokens) |
+| 6 | access/refresh token ไม่ตรวจ `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | token จากระบบอื่นที่แชร์ secret กันจะถูกยอมรับ |
+| 7 | ไม่มี script `typecheck` ที่ไหนเลย | ทุก `package.json` ในโปรเจกต์ | type error หลุดไปได้โดยไม่มีอะไรจับ ดู [Lint, format & type-check](/quality/code-quality) |
+| 8 | ไม่มี production Dockerfile/compose | `infra/docker/**`, root | มีแค่ dev stack ใช้งานจริงไม่ได้จนกว่าจะมี image สำหรับ production ดู [Docker & Traefik](/ops/docker-traefik) |
+| 9 | token ฝั่ง client เก็บใน sessionStorage ไม่ใช่ httpOnly cookie | `apps/web/src/core/auth/session.ts` | ขัดกับ [ADR-0006](/adr/0006-token-storage-httponly-cookie) — ยังไม่ได้ทำ เพราะเป็นงานเปลี่ยนสถาปัตยกรรม auth แยกต่างหาก ดู [Session ฝั่ง client](/frontend/auth-client) |
+| 10 | ไม่มี avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | ต้องมี object storage และ Google OAuth credentials ที่ยังไม่ได้ตั้งค่า ดู [โปรไฟล์](/features/profile) |
 
-✅ แก้แล้ว: `defaultLocale` ของ web เคยเป็น `en` (แก้เป็น `th` แล้ว), `button.tsx` เคยเขียนเองไม่ใช่ของ shadcn (แทนที่ด้วย component จาก Radix แล้ว), และ throttler bucket `"auth"` (5 req/60s) เคยถูกใช้กับทุก route โดยไม่ตั้งใจ (จำกัดเฉพาะ `/v1/auth/token` แล้วด้วย `@SkipThrottle`)
+✅ แก้แล้ว: `enableCors()` เคยเปล่า/อนุญาตทุก origin (ตอนนี้เป็น allowlist จาก `CORS_ORIGINS` แล้วใน `apps/api/src/main.ts`), `defaultLocale` ของ web เคยเป็น `en` (แก้เป็น `th` แล้ว), `button.tsx` เคยเขียนเองไม่ใช่ของ shadcn (แทนที่ด้วย component จาก Radix แล้ว), และ throttler bucket `"auth"` (5 req/60s) เคยถูกใช้กับทุก route โดยไม่ตั้งใจ (จำกัดเฉพาะ `/v1/auth/token` แล้วด้วย `@SkipThrottle`)
 
 ## ขอบเขตของเอกสาร
 

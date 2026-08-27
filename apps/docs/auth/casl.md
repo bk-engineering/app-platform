@@ -267,7 +267,7 @@ async me(@Req() req: Request) {
 ฝั่ง client ประกอบกลับ
 
 ```ts
-// apps/web/src/lib/ability.ts
+// apps/web/src/core/permissions/ability.ts
 import { createMongoAbility } from "@casl/ability";
 import { AbilityRulesSchema } from "@app-platform/contracts";
 

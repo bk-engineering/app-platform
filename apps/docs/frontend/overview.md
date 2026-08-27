@@ -99,6 +99,6 @@ flowchart TB
 | query/mutation hook ในทุกหน้า | มี hook ต่อทรัพยากรครบ (`use-users`, `use-roles`, `use-dashboard`, `use-me`, ฯลฯ) แต่ยังไม่มี server prefetch |
 | ฟอร์มผ่าน react-hook-form + zod | `Field`/`FieldError`/`applyServerErrors` ใช้งานจริงในทุกฟอร์ม |
 | shadcn/ui เต็มระบบ | `components.json` + component จาก Radix ครบ (`Button`, `Dialog`, `Select`, `Checkbox`, `Table`, ฯลฯ) |
-| `apps/web` ใช้ schema จาก `packages/contracts` | hook ทุกตัวใน `hooks/` import schema จาก contracts จริง |
+| `apps/web` ใช้ schema จาก `packages/contracts` | hook ทุกตัวใน `entities/*` และ `features/*` import schema จาก contracts จริง |
 | dark mode | `next-themes` + CSS variable ต่อโหมด + `ThemeToggle` ทำงานจริง |
 :::

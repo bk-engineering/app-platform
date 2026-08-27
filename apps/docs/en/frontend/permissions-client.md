@@ -42,7 +42,7 @@ Server-side prefetching means the first HTML is already correct — no moment wh
 ## The provider
 
 ```tsx
-// apps/web/src/lib/ability-context.tsx
+// apps/web/src/core/permissions/ability-context.tsx
 "use client";
 import { createContextualCan } from "@casl/react";
 import { createMongoAbility } from "@casl/ability";
@@ -73,7 +73,7 @@ export const useAbility = () => useContext(AbilityContext);
 ## Hiding things
 
 ```tsx
-import { Can } from "@/lib/ability-context";
+import { Can } from "@/core/permissions";
 
 <Can I="create" a="User">
   <Button onClick={openCreateDialog}>{t("addUser")}</Button>
@@ -229,10 +229,10 @@ Testing that something is *hidden* matters more than testing that it's shown —
 | Target spec | Code today |
 | --- | --- |
 | `@casl/ability` + `@casl/react` | Both installed and used |
-| `AbilityProvider` + `<Can>` | Real, at `apps/web/src/lib/ability-context.tsx` — wraps `@casl/react` v7's own `AbilityProvider`/`useAbility`/`Can` rather than hand-rolling a context (this page's code sample above predates that and is stale) |
+| `AbilityProvider` + `<Can>` | Real, at `apps/web/src/core/permissions/ability-context.tsx` — wraps `@casl/react` v7's own `AbilityProvider`/`useAbility`/`Can` rather than hand-rolling a context (this page's code sample above predates that and is stale) |
 | `GET /v1/auth/me` returning rules | Real — see [CASL](/en/auth/casl) |
 | Permission-filtered navigation | Real, at `apps/web/src/components/app-nav.tsx` — filters the users/roles links by real ability |
-| `<ForbiddenState />` | Real, at `apps/web/src/components/forbidden-state.tsx`, gating `settings/users` and `settings/roles` |
+| `<ForbiddenState />` | Real, at `apps/web/src/features/shell/forbidden-state.tsx`, gating `settings/users` and `settings/roles` |
 | Server prefetch + hydrate | Still missing — `AbilityProvider` fires a client-side `useQuery` only |
 | Tests | No test tooling in `apps/web` yet — existing ability tests are API-side only (`ability.factory.spec.ts`) |
 :::

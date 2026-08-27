@@ -97,7 +97,7 @@ Badge meanings live at [Status legend](/en/reference/status-legend).
 
 | Page | Status | Note |
 | --- | --- | --- |
-| [Testing strategy](/en/quality/testing) | <Status value="planned" inline /> | `vitest` installed, zero test files |
+| [Testing strategy](/en/quality/testing) | <Status value="planned" inline /> | `vitest` installed, 3 test files exist, no controller/e2e coverage |
 | [Lint, format & type-check](/en/quality/code-quality) | <Status value="in-progress" inline /> | eslint/prettier/husky work, no `typecheck` script |
 
 ### Operations & reference
@@ -117,19 +117,18 @@ Things we already know are wrong or contradict the spec, most urgent first.
 
 | # | Issue | Where | Why it matters |
 | --- | --- | --- | --- |
-| 1 | Bare `enableCors()` allows every origin | `apps/api/src/main.ts` | Must become an allowlist before production |
-| 2 | Env is never validated at boot | `apps/api/src/app.module.ts` | Misconfiguration explodes at runtime instead of failing to start — see [Config](/en/platform/config) |
-| 3 | Redis is provisioned but unused | `docker-compose.yml` | Decide what it's for (throttler store / refresh denylist) or remove it |
-| 4 | No tests at all | whole repo | `vitest` is a devDependency and `turbo test` exists, but there are almost no test files (`users.service.spec.ts` is the exception) |
-| 5 | No CI | no `.github/` | Nothing stops a broken build from merging — see [CI/CD](/en/ops/ci-cd) |
-| 6 | `JwtAuthGuard` doesn't distinguish expired from invalid | `apps/api/src/auth/jwt-auth.guard.ts` | Still a bare `AuthGuard("jwt")` — the client can't refresh silently and gets logged out every 15 minutes — see [JWT & rotation](/en/auth/tokens) |
-| 7 | Access/refresh tokens don't check `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | A token from another system sharing the same secret would be accepted |
-| 8 | No `typecheck` script anywhere | every `package.json` in the project | Type errors can slip through uncaught — see [Lint, format & type-check](/en/quality/code-quality) |
-| 9 | No production Dockerfile/compose | `infra/docker/**`, root | Only the dev stack works today, nothing deployable — see [Docker & Traefik](/en/ops/docker-traefik) |
-| 10 | Client tokens live in sessionStorage, not an httpOnly cookie | `apps/web/src/lib/session.ts` | Contradicts [ADR-0006](/en/adr/0006-token-storage-httponly-cookie) — not done yet, it's a separate auth-architecture change — see [Client session](/en/frontend/auth-client) |
-| 11 | No avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | Needs object storage and Google OAuth credentials that aren't configured — see [Profile](/en/features/profile) |
+| 1 | Env is never validated at boot | `apps/api/src/app.module.ts` | Misconfiguration explodes at runtime instead of failing to start — see [Config](/en/platform/config) |
+| 2 | Redis is provisioned but unused | `docker-compose.yml` | Decide what it's for (throttler store / refresh denylist) or remove it |
+| 3 | Only 3 test files exist, no controller/e2e coverage | whole repo | `refresh-token.service.spec.ts`, `users.service.spec.ts`, and `ability.factory.spec.ts` exist, but there's no controller or e2e coverage |
+| 4 | No CI | no `.github/` | Nothing stops a broken build from merging — see [CI/CD](/en/ops/ci-cd) |
+| 5 | `JwtAuthGuard` doesn't distinguish expired from invalid | `apps/api/src/auth/jwt-auth.guard.ts` | Still a bare `AuthGuard("jwt")` — the client can't refresh silently and gets logged out every 15 minutes — see [JWT & rotation](/en/auth/tokens) |
+| 6 | Access/refresh tokens don't check `issuer`/`audience` | `apps/api/src/auth/strategies/jwt.strategy.ts` | A token from another system sharing the same secret would be accepted |
+| 7 | No `typecheck` script anywhere | every `package.json` in the project | Type errors can slip through uncaught — see [Lint, format & type-check](/en/quality/code-quality) |
+| 8 | No production Dockerfile/compose | `infra/docker/**`, root | Only the dev stack works today, nothing deployable — see [Docker & Traefik](/en/ops/docker-traefik) |
+| 9 | Client tokens live in sessionStorage, not an httpOnly cookie | `apps/web/src/core/auth/session.ts` | Contradicts [ADR-0006](/en/adr/0006-token-storage-httponly-cookie) — not done yet, it's a separate auth-architecture change — see [Client session](/en/frontend/auth-client) |
+| 10 | No avatar upload / Google account linking | `apps/web/src/app/[locale]/(app)/profile/page.tsx` | Needs object storage and Google OAuth credentials that aren't configured — see [Profile](/en/features/profile) |
 
-Fixed since the last pass: web `defaultLocale` was `en` (now `th`), `button.tsx` was hand-written instead of real shadcn (now Radix-backed), and the `"auth"` throttle bucket (5 req/60s) was accidentally applied to every route instead of just `/v1/auth/token` (scoped with `@SkipThrottle`).
+Fixed since the last pass: bare `enableCors()` used to allow every origin (now an allowlist from `CORS_ORIGINS` in `apps/api/src/main.ts`), web `defaultLocale` was `en` (now `th`), `button.tsx` was hand-written instead of real shadcn (now Radix-backed), and the `"auth"` throttle bucket (5 req/60s) was accidentally applied to every route instead of just `/v1/auth/token` (scoped with `@SkipThrottle`).
 
 ## Documentation scope
 

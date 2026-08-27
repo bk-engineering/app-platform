@@ -9,7 +9,7 @@ statusNote: ไม่มีโฟลเดอร์ .github/workflows เลย 
 <Status value="planned" />
 
 ::: warning ไม่มี CI ตอนนี้
-`.github/workflows/` ไม่มีอยู่จริงในโค้ด — ไม่มีอะไรกันการ merge โค้ดที่ build พัง, lint ไม่ผ่าน หรือ type error ดู [Roadmap ข้อ 9](/start/roadmap) ทุกอย่างในหน้านี้คือสเปกเป้าหมาย
+`.github/workflows/` ไม่มีอยู่จริงในโค้ด — ไม่มีอะไรกันการ merge โค้ดที่ build พัง, lint ไม่ผ่าน หรือ type error ดู [Roadmap ข้อ 4](/start/roadmap) ทุกอย่างในหน้านี้คือสเปกเป้าหมาย
 :::
 
 ## ทำไมต้องมี
@@ -38,7 +38,7 @@ flowchart LR
 | --- | --- | --- |
 | lint | `pnpm lint` | code style, unused import, กฎของ eslint |
 | typecheck | `pnpm turbo run typecheck` | type error ข้าม workspace (contracts → web/api) |
-| test | `pnpm test` | ตอนนี้ยังไม่มีไฟล์เทสเลย — ดู [Roadmap ข้อ 8](/start/roadmap), stage นี้ผ่านอัตโนมัติจนกว่าจะมี |
+| test | `pnpm test` | มีเทส 3 ไฟล์แล้วแต่ยังไม่ครอบคลุม controller/e2e — ดู [Roadmap ข้อ 3](/start/roadmap), stage นี้รันเทสที่มีอยู่เท่านั้น |
 | build | `pnpm build` | ทุกแอป build ผ่านจริง ไม่ใช่แค่ dev server รันได้ |
 | docs parity gate | `pnpm --filter @app-platform/docs build` | หน้าไทยที่ไม่มีมิเรอร์ `/en/`, dead link, mermaid/Vue compile error |
 

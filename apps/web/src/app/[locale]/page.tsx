@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "@/i18n/navigation";
-import { useSession } from "@/hooks/use-session";
-import { getSession } from "@/lib/session";
+import { useRouter } from "@/core/i18n";
+import { useSession } from "@/core/auth";
+import { getSession } from "@/core/auth";
 
 export default function HomePage() {
   const session = useSession();

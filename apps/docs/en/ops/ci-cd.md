@@ -9,7 +9,7 @@ statusNote: no .github/workflows directory exists — no CI runs at all
 <Status value="planned" />
 
 ::: warning There is no CI today
-`.github/workflows/` does not exist in the codebase — nothing stops a broken build, a failing lint, or a type error from being merged. See [Roadmap item 9](/en/start/roadmap). Everything on this page is the target spec.
+`.github/workflows/` does not exist in the codebase — nothing stops a broken build, a failing lint, or a type error from being merged. See [Roadmap item 4](/en/start/roadmap). Everything on this page is the target spec.
 :::
 
 ## Why it matters
@@ -38,7 +38,7 @@ Each stage runs through `turbo` so caching skips work across jobs and untouched 
 | --- | --- | --- |
 | lint | `pnpm lint` | Code style, unused imports, eslint rules |
 | typecheck | `pnpm turbo run typecheck` | Cross-workspace type errors (contracts → web/api) |
-| test | `pnpm test` | No test files exist yet — see [Roadmap item 8](/en/start/roadmap); this stage passes vacuously until they do |
+| test | `pnpm test` | 3 test files exist but controller/e2e coverage is still missing — see [Roadmap item 3](/en/start/roadmap); this stage only runs what exists today |
 | build | `pnpm build` | Every app must actually build, not just run its dev server |
 | docs parity gate | `pnpm --filter @app-platform/docs build` | Thai pages with no `/en/` mirror, dead links, mermaid/Vue compile errors |
 

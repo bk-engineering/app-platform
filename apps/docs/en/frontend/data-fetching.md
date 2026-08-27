@@ -30,7 +30,7 @@ The problem isn't the line count — it's the behavior that's missing. No dedupe
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { ApiError } from "@/lib/api-client";
+import { ApiError } from "@/core/api-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -67,7 +67,7 @@ TanStack Query's default retry (3 attempts, exponential backoff) doesn't disting
 ## Query key convention <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/query-keys.ts
+// apps/web/src/core/auth/query-keys.ts (sessionKeys) + entities/*/query-keys.ts + features/*/query-keys.ts
 export const userKeys = {
   all: ["users"] as const,
   list: (filters: { page: number; search?: string }) => [...userKeys.all, "list", filters] as const,
@@ -86,11 +86,11 @@ The real project has `sessionKeys`, `userKeys`, `roleKeys`, and `dashboardKeys` 
 ## Writing a query hook <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts
+// apps/web/src/entities/user/use-users.ts
 import { useQuery } from "@tanstack/react-query";
 import { paginatedSchema, UserSchema } from "@app-platform/contracts";
-import { request } from "@/lib/api-client";
-import { userKeys } from "@/hooks/query-keys";
+import { request } from "@/core/api-client";
+import { userKeys } from "@/core/auth";
 
 export function useUsers(page: number, search: string) {
   return useQuery({
@@ -102,7 +102,7 @@ export function useUsers(page: number, search: string) {
 }
 ```
 
-`request` comes from `lib/api-client.ts` (see [Client session](/en/frontend/auth-client#automatic-refresh)) — it parses the response through the same schema the API uses to generate Swagger, so the type of `data` can never drift from what the server actually sends. The real project has a hook like this per resource: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`.
+`request` comes from `core/api-client/api-client.ts` (see [Client session](/en/frontend/auth-client#automatic-refresh)) — it parses the response through the same schema the API uses to generate Swagger, so the type of `data` can never drift from what the server actually sends. The real project has a hook like this per resource: `use-users.ts`, `use-roles.ts`, `use-dashboard.ts`, `use-me.ts`, `use-change-password.ts`.
 
 ## Server prefetch + Hydration
 
@@ -148,7 +148,7 @@ export default async function UsersPage() {
 ## Mutations + invalidation <Status value="implemented" inline />
 
 ```ts
-// apps/web/src/hooks/use-users.ts
+// apps/web/src/entities/user/use-users.ts
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
 
@@ -185,8 +185,8 @@ Bind `error.code` to a translated message in the locale files instead of showing
 | Target spec | Code today |
 | --- | --- |
 | `QueryClient` with central `staleTime`/`retry` defaults | `retry` is centralized (skips `ApiError` after a refresh) — no central `staleTime` yet, each hook sets its own |
-| query/mutation hooks in a `hooks/` folder | Exist for every resource: users, roles, dashboard, audit log, me, change-password |
-| `request` client with single-flight refresh | Real, in `lib/api-client.ts` — see [Client session](/en/frontend/auth-client) |
+| query/mutation hooks in `entities/*` and `features/*` | Exist for every resource: users, roles, dashboard, audit log, me, change-password |
+| `request` client with single-flight refresh | Real, in `core/api-client/api-client.ts` — see [Client session](/en/frontend/auth-client) |
 | Server prefetch + `HydrationBoundary` | Still missing — every route fetches from the client after mount |
 | query key convention (`query-keys.ts`) | Real — `sessionKeys`, `userKeys`, `roleKeys`, `dashboardKeys` |
 :::

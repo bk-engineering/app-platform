@@ -9,7 +9,7 @@ statusNote: session/use-session/single-flight refresh ทำงานจริ�
 <Status value="in-progress" note="session/use-session/single-flight refresh ทำงานจริง · sessionStorage ไม่ใช่ httpOnly cookie ตาม ADR-0006" />
 
 ::: warning ทำไมสถานะยังเป็น in-progress ไม่ใช่ implemented
-เอกสารหน้านี้เลือก httpOnly cookie ([ADR-0006](/adr/0006-token-storage-httponly-cookie)) แต่โค้ดจริงเก็บ token ใน `sessionStorage` และแนบ `Authorization: Bearer` เอง (`apps/web/src/lib/api-client.ts`) — ไม่มี route handler `/api/auth/*` และไม่มี CSRF token เพราะไม่มี cookie ให้ป้องกัน สิ่งที่ implement ตรงสเปกแล้วคือ single-flight refresh และการแยก `AUTH_TOKEN_EXPIRED`/`AUTH_TOKEN_INVALID` ฝั่ง API (ดู [JWT & rotation](/auth/tokens)) — แต่ client ยัง retry แบบ blind บน 401 ทุกชนิด ไม่ได้เช็ค code ก่อนตัดสินใจ refresh
+เอกสารหน้านี้เลือก httpOnly cookie ([ADR-0006](/adr/0006-token-storage-httponly-cookie)) แต่โค้ดจริงเก็บ token ใน `sessionStorage` และแนบ `Authorization: Bearer` เอง (`apps/web/src/core/api-client/api-client.ts`) — ไม่มี route handler `/api/auth/*` และไม่มี CSRF token เพราะไม่มี cookie ให้ป้องกัน สิ่งที่ implement ตรงสเปกแล้วคือ single-flight refresh และการแยก `AUTH_TOKEN_EXPIRED`/`AUTH_TOKEN_INVALID` ฝั่ง API (ดู [JWT & rotation](/auth/tokens)) — แต่ client ยัง retry แบบ blind บน 401 ทุกชนิด ไม่ได้เช็ค code ก่อนตัดสินใจ refresh
 :::
 
 เบราว์เซอร์เก็บ session ยังไง ต่ออายุยังไง และป้องกัน route ยังไง
@@ -146,7 +146,7 @@ stateDiagram-v2
 ```
 
 ```ts
-// apps/web/src/lib/api-client.ts
+// apps/web/src/core/api-client/api-client.ts
 let refreshPromise: Promise<boolean> | null = null;
 
 /** ทุกคนที่เจอ 401 พร้อมกัน แชร์การ refresh ครั้งเดียว */
@@ -208,7 +208,7 @@ export async function apiFetch<T extends z.ZodTypeAny>(
 ```ts
 // apps/web/src/proxy.ts
 import createIntlMiddleware from "next-intl/middleware";
-import { routing } from "./i18n/routing";
+import { routing } from "@/core/i18n";
 
 const intl = createIntlMiddleware(routing);
 
@@ -248,7 +248,7 @@ middleware ทำหน้าที่ UX (ไม่ให้เห็นหน�
 ## Session ปัจจุบัน
 
 ```ts
-// apps/web/src/hooks/use-session.ts
+// apps/web/src/core/auth/use-session.ts
 export const sessionKeys = { me: ["auth", "me"] as const };
 
 export function useSession() {
@@ -311,10 +311,10 @@ export async function POST() {
 ::: warning สถานะโค้ดปัจจุบัน
 | สเปกเป้าหมาย | โค้ดวันนี้ |
 | --- | --- |
-| route handler `/api/auth/*` ตั้ง httpOnly cookie | ไม่มี — client ยิงตรงไป API ด้วย `Authorization: Bearer` แทน (`apps/web/src/lib/api-client.ts`) |
+| route handler `/api/auth/*` ตั้ง httpOnly cookie | ไม่มี — client ยิงตรงไป API ด้วย `Authorization: Bearer` แทน (`apps/web/src/core/api-client/api-client.ts`) |
 | `api-client` + single-flight refresh | ✅ `refreshInFlight` promise เดียวกันสำหรับ 401 ที่มาพร้อมกัน — แต่ retry ทุก 401 ไม่ได้แยก `AUTH_TOKEN_EXPIRED` ก่อน |
 | ป้องกัน route ใน `proxy.ts` | มีแต่ middleware ของ next-intl — ยังไม่เช็ค session ก่อน redirect ไป login |
-| `useSession` + ability | ✅ `apps/web/src/hooks/use-session.ts` (`useSyncExternalStore` บน `sessionStorage`) แยกจาก `useAbility()` ใน `apps/web/src/lib/ability-context.tsx` (สเปกนี้รวมสองอย่างไว้ในฮุกเดียว) |
+| `useSession` + ability | ✅ `apps/web/src/core/auth/use-session.ts` (`useSyncExternalStore` บน `sessionStorage`) แยกจาก `useAbility()` ใน `apps/web/src/core/permissions/ability-context.tsx` (สเปกนี้รวมสองอย่างไว้ในฮุกเดียว) |
 | CSRF token | ไม่ต้องมี — ไม่มี cookie ให้ CSRF โจมตี, token อยู่ใน `sessionStorage` และแนบผ่าน header เอง |
 | `QueryClient` ตั้ง default | ✅ `providers.tsx` ตั้ง `retry` ให้ข้าม `ApiError` ที่ผ่านการ refresh มาแล้ว |
 | prefetch ฝั่ง server + hydrate | ไม่มี — ทุกอย่างเป็น client-side fetch |

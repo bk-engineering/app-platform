@@ -94,17 +94,17 @@ Tailwind v4 ใช้ `@custom-variant dark (&:where(.dark, .dark *))` (หร�
 }
 ```
 
-component ทุกตัวใช้ `bg-background`, `text-foreground`, `bg-primary` — ไม่มีที่ไหนเขียน `dark:bg-slate-900` ตรง ๆ ในไฟล์ component เพราะความต่างระหว่างโหมดอยู่ในนิยาม CSS variable ชั้นเดียวเท่านั้น `components/ui/button.tsx` ก็ย้ายมาใช้ `bg-primary` แล้ว จึงสลับ dark mode ได้เองโดยไม่ต้องแก้ component
+component ทุกตัวใช้ `bg-background`, `text-foreground`, `bg-primary` — ไม่มีที่ไหนเขียน `dark:bg-slate-900` ตรง ๆ ในไฟล์ component เพราะความต่างระหว่างโหมดอยู่ในนิยาม CSS variable ชั้นเดียวเท่านั้น `core/ui/button.tsx` ก็ย้ายมาใช้ `bg-primary` แล้ว จึงสลับ dark mode ได้เองโดยไม่ต้องแก้ component
 
 ## Toggle component
 
 ```tsx
-// apps/web/src/components/theme-toggle.tsx
+// apps/web/src/features/settings/theme-toggle.tsx
 "use client";
 
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -129,7 +129,7 @@ export function ThemeToggle() {
 `next-themes` เก็บค่าลง `localStorage` ให้อัตโนมัติ ซึ่งพอสำหรับ MVP แต่ไม่ sync ข้ามอุปกรณ์ — หน้า [ตั้งค่า · ธีม](/features/settings-theme) sync ค่าเข้า `User.theme` ผ่าน API ด้วยแล้ว เพื่อให้ผู้ใช้เห็นธีมเดิมตอนล็อกอินจากเครื่องอื่น
 
 ```ts
-// apps/web/src/hooks/use-me.ts — ใช้จริงจากหน้าตั้งค่าธีม
+// apps/web/src/entities/user/use-me.ts — ใช้จริงจากหน้าตั้งค่าธีม
 export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -162,7 +162,7 @@ export function useUpdateMe() {
 | dependency `next-themes` | ติดตั้งและใช้งานจริง |
 | `ThemeProvider` ใน `providers.tsx` | มีจริง ห่อ `QueryClientProvider` |
 | CSS variable ต่อโหมด (`:root` / `.dark`) ใน `globals.css` | มีครบ: `background`, `foreground`, `card`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, `border`, `input`, `ring` |
-| `ThemeToggle` component | มีจริงที่ `components/theme-toggle.tsx` ใช้ในทุกหน้าผ่าน `(app)/layout.tsx` |
+| `ThemeToggle` component | มีจริงที่ `features/settings/theme-toggle.tsx` ใช้ในทุกหน้าผ่าน `(app)/layout.tsx` |
 | `suppressHydrationWarning` บน `<html>` | มีจริง |
 | sync ธีมเข้า profile ผ่าน API | มีจริงผ่าน `PATCH /v1/auth/me` — sync กลับเป็น cookie ตอน login ยังไม่ implement |
 :::

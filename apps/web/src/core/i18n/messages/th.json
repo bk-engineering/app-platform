@@ -1,0 +1,142 @@
+{
+  "LoginPage": {
+    "title": "เข้าสู่ระบบ",
+    "subtitle": "กรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ",
+    "email": "อีเมล",
+    "password": "รหัสผ่าน",
+    "submit": "เข้าสู่ระบบ",
+    "submitting": "กำลังเข้าสู่ระบบ…",
+    "invalidCredentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+    "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
+  },
+  "ComingSoon": {
+    "title": "เร็ว ๆ นี้",
+    "body": "หน้านี้ยังสร้างไม่เสร็จ"
+  },
+  "Nav": {
+    "dashboard": "แดชบอร์ด",
+    "users": "จัดการผู้ใช้",
+    "roles": "Role & Permission",
+    "theme": "ธีม",
+    "profile": "โปรไฟล์",
+    "account": "บัญชี",
+    "logOut": "ออกจากระบบ",
+    "groupGeneral": "ทั่วไป",
+    "groupSettings": "การตั้งค่า",
+    "groupAccount": "บัญชี",
+    "appName": "app-platform"
+  },
+  "ThemeToggle": {
+    "toggle": "สลับธีม"
+  },
+  "DashboardPage": {
+    "greeting": "สวัสดี, {name} 👋",
+    "summaryError": "โหลดข้อมูลสรุปไม่สำเร็จ",
+    "activityError": "โหลดกิจกรรมล่าสุดไม่สำเร็จ",
+    "retry": "ลองใหม่",
+    "totalUsers": "ผู้ใช้ทั้งหมด",
+    "activeUsers": "ใช้งานอยู่",
+    "inactiveUsers": "ปิดการใช้งาน",
+    "recentActivity": "กิจกรรมล่าสุด",
+    "noActivity": "ยังไม่มีกิจกรรมในระบบ",
+    "system": "ระบบ",
+    "nothingToShow": "ไม่มีข้อมูลให้แสดง",
+    "nothingToShowDescription": "บัญชีของคุณยังไม่มีสิทธิ์ดู widget ใดในหน้านี้"
+  },
+  "SettingsPage": {
+    "title": "การตั้งค่า",
+    "description": "จัดการผู้ใช้ บทบาท และรูปลักษณ์"
+  },
+  "UsersPage": {
+    "title": "จัดการผู้ใช้",
+    "addUser": "เพิ่มผู้ใช้",
+    "editUser": "แก้ไขผู้ใช้",
+    "searchPlaceholder": "ค้นหาชื่อ/อีเมล...",
+    "email": "อีเมล",
+    "displayName": "ชื่อ",
+    "password": "รหัสผ่าน",
+    "role": "Role",
+    "status": "สถานะ",
+    "active": "ใช้งานอยู่",
+    "inactive": "ปิดการใช้งาน",
+    "actions": "การกระทำ",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "cancel": "ยกเลิก",
+    "save": "บันทึก",
+    "createdAt": "สร้างเมื่อ",
+    "loading": "กำลังโหลด…",
+    "error": "โหลดรายชื่อผู้ใช้ไม่สำเร็จ",
+    "retry": "ลองใหม่",
+    "noUsers": "ยังไม่มีผู้ใช้ในระบบ",
+    "noSearchResults": "ไม่พบผู้ใช้ที่ตรงกับ '{search}'",
+    "clearFilters": "ล้างตัวกรอง",
+    "confirmDeleteTitle": "ลบผู้ใช้ '{name}' ถาวร?",
+    "createSuccess": "เพิ่มผู้ใช้แล้ว",
+    "createError": "เพิ่มผู้ใช้ไม่สำเร็จ",
+    "updateSuccess": "บันทึกแล้ว",
+    "updateError": "บันทึกไม่สำเร็จ",
+    "deleteSuccess": "ลบผู้ใช้แล้ว",
+    "deleteError": "ลบผู้ใช้ไม่สำเร็จ",
+    "lastAdminError": "ต้องเหลือผู้ดูแลอย่างน้อยหนึ่งคน"
+  },
+  "RolesPage": {
+    "title": "Role & Permission",
+    "addRole": "เพิ่ม role",
+    "editRole": "แก้ไข role: {name}",
+    "name": "ชื่อ",
+    "key": "Key",
+    "keyHint": "ตัวเล็ก ตัวเลข และ _ เท่านั้น แก้ไม่ได้หลังสร้าง",
+    "keyTaken": "key นี้ถูกใช้แล้ว",
+    "permissions": "Permission",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "createSuccess": "สร้าง role แล้ว",
+    "updateSuccess": "บันทึกแล้ว",
+    "saveError": "บันทึกไม่สำเร็จ",
+    "deleteSuccess": "ลบ role แล้ว",
+    "deleteError": "ลบ role ไม่สำเร็จ",
+    "roleInUse": "ลบไม่ได้ — มีผู้ใช้ {count} คนใช้ role นี้อยู่",
+    "confirmDeleteTitle": "ลบ role '{name}'?",
+    "permissionCount": "{count} permission",
+    "userCount": "{count} คน"
+  },
+  "ThemePage": {
+    "title": "ธีม",
+    "colorMode": "โหมดสี",
+    "light": "สว่าง",
+    "dark": "มืด",
+    "system": "ตามระบบ",
+    "preview": "ตัวอย่าง",
+    "previewButton": "ปุ่มตัวอย่าง",
+    "previewText": "ข้อความตัวอย่าง"
+  },
+  "ProfilePage": {
+    "title": "โปรไฟล์ของฉัน",
+    "displayName": "ชื่อที่แสดง",
+    "email": "อีเมล",
+    "verified": "ยืนยันแล้ว",
+    "save": "บันทึกการเปลี่ยนแปลง",
+    "saveSuccess": "บันทึกแล้ว",
+    "saveError": "บันทึกไม่สำเร็จ",
+    "security": "ความปลอดภัย",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "currentPassword": "รหัสผ่านปัจจุบัน",
+    "newPassword": "รหัสผ่านใหม่",
+    "confirmPassword": "ยืนยันรหัสผ่านใหม่",
+    "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
+    "passwordChanged": "เปลี่ยนรหัสผ่านแล้ว",
+    "passwordChangeError": "เปลี่ยนรหัสผ่านไม่สำเร็จ",
+    "wrongCurrentPassword": "รหัสผ่านปัจจุบันไม่ถูกต้อง"
+  },
+  "ErrorPage": {
+    "title": "เกิดข้อผิดพลาด",
+    "retry": "ลองใหม่"
+  },
+  "ForbiddenState": {
+    "title": "คุณไม่มีสิทธิ์เข้าหน้านี้",
+    "description": "ติดต่อผู้ดูแลระบบหากคิดว่าไม่ถูกต้อง",
+    "backToHome": "กลับหน้าแรก"
+  }
+}

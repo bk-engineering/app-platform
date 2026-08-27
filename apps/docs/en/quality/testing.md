@@ -1,12 +1,12 @@
 ---
 title: Testing strategy
 status: planned
-statusNote: "vitest is installed with a test script, but there isn't a single test file anywhere in the repo"
+statusNote: "vitest is installed with a test script; 3 test files exist (auth, users, ability), but there's no controller or e2e coverage yet"
 ---
 
 # Testing strategy
 
-<Status value="planned" note="A test runner exists; coverage is zero" />
+<Status value="planned" note="A test runner exists; 3 test files exist, no controller/e2e coverage yet" />
 
 > **The best test catches what *can't* be done, not just what *can* — especially for permissions.**
 

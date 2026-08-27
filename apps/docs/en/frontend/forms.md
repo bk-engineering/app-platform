@@ -32,16 +32,16 @@ One schema does three jobs: defines the type of the form values, generates clien
 ## A full form example
 
 ```tsx
-// apps/web/src/components/forms/login-form.tsx — target
+// apps/web/src/features/auth/login-form.tsx — target
 "use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema, type Login } from "@app-platform/contracts";
-import { useLogin } from "@/hooks/use-login";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldError } from "@/components/ui/field";
+import { useLogin } from "@/features/auth";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Field, FieldError } from "@/core/ui/field";
 
 export function LoginForm() {
   const form = useForm<Login>({
@@ -83,7 +83,7 @@ Turn off the browser's own validation (`required`, the `type="email"` popup) —
 `Field` is a thin wrapper that lays out label + input + error text according to the design tokens — it isn't part of react-hook-form itself. It lives in the UI system so every form looks the same.
 
 ```tsx
-// apps/web/src/components/ui/field.tsx
+// apps/web/src/core/ui/field.tsx
 export function Field({ label, htmlFor, error, hint, children, className }: FieldProps) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -101,9 +101,9 @@ export function Field({ label, htmlFor, error, hint, children, className }: Fiel
 The server can reject a submission for reasons client-side zod can't check ahead of time (like "this email is already taken"). Those arrive as an [error envelope](/en/conventions/errors) and need converting back into react-hook-form field errors.
 
 ```ts
-// apps/web/src/lib/apply-server-errors.ts
+// apps/web/src/core/api-client/apply-server-errors.ts
 import type { UseFormReturn, FieldValues, Path } from "react-hook-form";
-import { ApiError } from "@/lib/api-client";
+import { ApiError } from "@/core/api-client";
 
 export function applyServerErrors<T extends FieldValues>(form: UseFormReturn<T>, err: unknown) {
   if (!(err instanceof ApiError) || err.status !== 422) throw err; // not a validation error — let an error boundary handle it
@@ -132,7 +132,7 @@ export function applyServerErrors<T extends FieldValues>(form: UseFormReturn<T>,
 `onSubmit` never calls `fetch` directly — it always calls a mutation hook from [Data fetching](/en/frontend/data-fetching#mutations-invalidation). The reason: `isSubmitting` needs to reflect real network state (a mutation's `isPending`), not a hand-rolled flag, and a successful submit needs to invalidate the right queries immediately.
 
 ```ts
-// apps/web/src/hooks/use-users.ts
+// apps/web/src/entities/user/use-users.ts
 export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -160,8 +160,8 @@ describe("LoginSchema", () => {
 | Target spec | Code today |
 | --- | --- |
 | forms using `zodResolver` | Real in every form: login, add/edit user, create/edit role, change password, profile |
-| `Field` / `FieldError` in the UI system | Real at `components/ui/field.tsx`, used everywhere |
-| `applyServerErrors` mapping 422s back onto the form | Real at `lib/apply-server-errors.ts` |
+| `Field` / `FieldError` in the UI system | Real at `core/ui/field.tsx`, used everywhere |
+| `applyServerErrors` mapping 422s back onto the form | Real at `core/api-client/apply-server-errors.ts` |
 | mutation hook per form | Real in `use-users.ts`, `use-roles.ts`, `use-me.ts`, `use-change-password.ts` |
 | `react-hook-form` + `@hookform/resolvers` dependencies | Installed and used throughout the app |
 :::

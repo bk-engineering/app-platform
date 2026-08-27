@@ -14,7 +14,7 @@ shadcn/ui isn't an npm package you import — it's a CLI that copies component c
 
 | | npm component library (e.g. MUI, Antd) | shadcn/ui |
 | --- | --- | --- |
-| Where the code lives | `node_modules`, can't edit directly | `components/ui/` in our own repo |
+| Where the code lives | `node_modules`, can't edit directly | `core/ui/` in our own repo |
 | Bundle size | Ships the whole library even if you use a handful of pieces | Only the components `npx shadcn add` actually copied |
 | Adjusting style | Override through the library's theme API | Edit the Tailwind classes directly in the file |
 | Upgrading | `npm update`, may bring a breaking change | No "version" — the code stays put until you change it |
@@ -40,8 +40,8 @@ This generates `components.json`, the config the CLI reads every time it adds a 
   },
   "aliases": {
     "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui"
+    "utils": "@/shared/lib",
+    "ui": "@/core/ui"
   }
 }
 ```
@@ -54,7 +54,7 @@ This generates `components.json`, the config the CLI reads every time it adds a 
 npx shadcn@latest add button dialog form
 ```
 
-This writes files directly — e.g. `components/ui/button.tsx` — rather than adding a `package.json` dependency. Review the diff visually, then `git add` as usual.
+This writes files directly — e.g. `core/ui/button.tsx` — rather than adding a `package.json` dependency. Review the diff visually, then `git add` as usual.
 
 ## Folder structure
 
@@ -68,18 +68,18 @@ apps/web/src/components/
     └── login-form.tsx
 ```
 
-::: tip Don't put data fetching inside `components/ui/`
-`components/ui/*` should stay purely presentational — props in, render out, callbacks on interaction. Anything that knows about queries, mutations, or routes belongs in `components/forms/` or near the page that uses it. Keeping that boundary means future upgrades of a CLI-generated component won't collide with our own logic.
+::: tip Don't put data fetching inside `core/ui/`
+`core/ui/*` should stay purely presentational — props in, render out, callbacks on interaction. Anything that knows about queries, mutations, or routes belongs in `features/*/` or near the page that uses it. Keeping that boundary means future upgrades of a CLI-generated component won't collide with our own logic.
 :::
 
 ## A component the way the CLI would generate it
 
 ```tsx
-// apps/web/src/components/ui/button.tsx
+// apps/web/src/core/ui/button.tsx
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
