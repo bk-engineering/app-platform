@@ -33,6 +33,26 @@ pnpm dev:docker
 
 `*.localhost` resolves to `127.0.0.1` automatically in modern browsers/OSes — no `/etc/hosts` edits needed.
 
+## Monitoring stack
+
+Loki, Promtail, Grafana, Prometheus, and node-exporter live in a separate compose file
+(`docker-compose.monitoring.yml`) so you can run the app without them. It attaches to the
+`app-platform` network created by the main stack, so **start the app stack first**:
+
+```bash
+pnpm dev:docker      # creates the app-platform network
+pnpm monitoring:up   # -d; loki/grafana/prometheus/promtail/node-exporter
+pnpm monitoring:down
+```
+
+| Service | URL |
+| --- | --- |
+| Grafana | http://grafana.localhost |
+| Prometheus | http://localhost:9090 |
+
+Tear down in the reverse order — `pnpm monitoring:down` before `pnpm dev:docker:down` — so the
+`app-platform` network isn't left behind while monitoring containers are still attached.
+
 Editing any file under `apps/*` or `packages/*` on the host reloads the corresponding container in place; images only need rebuilding when a `package.json` changes (`pnpm dev:docker:build`).
 
 Run migrations and seed data once Postgres is up:
